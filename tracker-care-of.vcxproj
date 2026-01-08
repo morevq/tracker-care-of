@@ -136,6 +136,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="env-parser.cpp" />
     <ClCompile Include="postgre-db.cpp" />
     <ClCompile Include="tracker-care-of.cpp" />
   </ItemGroup>
