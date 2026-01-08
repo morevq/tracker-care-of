@@ -24,6 +24,9 @@
     <ClCompile Include="env-parser.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="auth-service.cpp">
+      <Filter>Исходные файлы</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="postgre-db.h">
@@ -32,12 +35,18 @@
     <ClInclude Include="env-parser.h">
       <Filter>Исходные файлы</Filter>
     </ClInclude>
+    <ClInclude Include="auth-service.h">
+      <Filter>Исходные файлы</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include=".env">
       <Filter>Исходные файлы</Filter>
     </None>
     <None Include=".gitignore">
+      <Filter>Исходные файлы</Filter>
+    </None>
+    <None Include="vcpkg.json">
       <Filter>Исходные файлы</Filter>
     </None>
   </ItemGroup>

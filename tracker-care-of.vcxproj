@@ -136,17 +136,20 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="auth-service.cpp" />
     <ClCompile Include="env-parser.cpp" />
     <ClCompile Include="postgre-db.cpp" />
     <ClCompile Include="tracker-care-of.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="auth-service.h" />
     <ClInclude Include="postgre-db.h" />
     <ClInclude Include="env-parser.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".env" />
     <None Include=".gitignore" />
+    <None Include="vcpkg.json" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

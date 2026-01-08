@@ -29,6 +29,11 @@ PostgreDB::PostgreDB() {
     };
 
     connection = PQconnectdbParams(keywords, values, 0);
+
+    #ifdef _WIN32
+    PQsetClientEncoding(connection, "WIN1251");
+    #endif
+
     check_connection();
 }
 

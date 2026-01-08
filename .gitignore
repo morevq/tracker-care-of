@@ -3,16 +3,37 @@
 
 # build
 x64/
+CMakeBuild/
 .vs/
+build/
 
 # vcpkg
 vcpkg_installed/
 
 # Visual Studio user files
 *.vcxproj.user
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# CMake generated files
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
 
 # binaries
 *.exe
 *.dll
 *.lib
 *.pdb
+
+# other temporary files
+*.log
+*.obj
+*.idb
+*.ipch
+*.tlog/
+*.lastbuildstate
