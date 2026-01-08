@@ -1,0 +1,18 @@
+# secrets
+.env
+
+# build
+x64/
+.vs/
+
+# vcpkg
+vcpkg_installed/
+
+# Visual Studio user files
+*.vcxproj.user
+
+# binaries
+*.exe
+*.dll
+*.lib
+*.pdb

@@ -1,0 +1,7 @@
+<Solution>
+  <Configurations>
+    <Platform Name="x64" />
+    <Platform Name="x86" />
+  </Configurations>
+  <Project Path="tracker-care-of.vcxproj" Id="43ab6b90-dc25-493f-af6a-ef9a4a715623" />
+</Solution>
