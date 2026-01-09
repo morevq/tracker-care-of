@@ -22,7 +22,11 @@ add_executable(main
     db/postgre-db.cpp
     db/env-parser.cpp
     repositories/patient-repository.cpp
- "models/patient.cpp")
+    models/patient.cpp
+    repositories/anamnesis-repository.cpp
+    ui/show-anamnesis-ui.cpp
+    ui/console-utils.cpp
+)
 
 target_link_libraries(main
     PRIVATE fmt::fmt

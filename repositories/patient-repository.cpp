@@ -1,7 +1,7 @@
 #include <iostream>
 #include "patient-repository.h"
 
-PatientRepository::PatientRepository(PGconn* conn) : connection(conn) {}
+PatientRepository::PatientRepository(PGconn* connection) : connection(connection) {}
 
 std::vector<Patient> PatientRepository::getByUserUUID(const std::string& user_uuid) {
 	std::vector<Patient> patients;
@@ -45,7 +45,7 @@ std::vector<Patient> PatientRepository::getByUserUUID(const std::string& user_uu
 		patient.name = PQgetvalue(res, i, col_name);
 		patient.birth_date = PQgetvalue(res, i, col_birth_date);
 		
-		char* birth_date_cstr = PQgetvalue(res, i, 3);
+		char* birth_date_cstr = PQgetvalue(res, i, col_birth_date);
 		if (birth_date_cstr && birth_date_cstr[0] != '\0') {
 			patient.birth_date = std::string(birth_date_cstr);
 		} else {
