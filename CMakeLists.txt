@@ -13,9 +13,10 @@ find_package(fmt CONFIG REQUIRED)
 find_package(PostgreSQL REQUIRED)
 find_package(unofficial-argon2 CONFIG REQUIRED)
 
-add_executable(tracker-care-of
-    tracker-care-of.cpp
-    auth-service.cpp
+add_executable(main
+    main.cpp
+
+    services/auth-service.cpp
 
     db/postgre-db.cpp
     db/env-parser.cpp
@@ -23,7 +24,7 @@ add_executable(tracker-care-of
     repositories/patient-repository.cpp
 )
 
-target_link_libraries(tracker-care-of
+target_link_libraries(main
     PRIVATE fmt::fmt
     PostgreSQL::PostgreSQL
     unofficial::argon2::libargon2
