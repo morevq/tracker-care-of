@@ -174,6 +174,6 @@ void PostgreDB::set_water_frequency(
     PQclear(res);
 }
 
-PGconn* PostgreDB::get_connection() {
+PGconn* PostgreDB::getConnection() {
     return connection;
 }

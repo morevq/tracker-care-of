@@ -33,5 +33,5 @@ public:
         const std::string& measure
     );
 
-    PGconn* get_connection();
+    PGconn* getConnection();
 };
