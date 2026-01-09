@@ -1,7 +1,6 @@
-#include <fstream>
 #include <iostream>
-#include <string>
-#include <unordered_map>
+
+#include "env-parser.h"
 
 std::unordered_map<std::string, std::string> load_env(const std::string& path) {
 	std::unordered_map<std::string, std::string> env;
