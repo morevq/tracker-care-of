@@ -27,7 +27,7 @@ int main() {
             return 0;
         }
 
-        // Подготавливаем данные для интерактивной таблицы
+        // подготовка данных для интерактивной таблицы
         vector<PatientTableRow> tablePatients;
         for (const auto& p : patientsData) {
             PatientTableRow row;

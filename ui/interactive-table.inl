@@ -10,13 +10,13 @@
 #include <windows.h>
 #endif
 
-// Цвета консоли
+// цвета консоли
 enum ConsoleColor {
     BLACK = 0, BLUE, GREEN, CYAN, RED, MAGENTA, YELLOW, LIGHT_GRAY,
     DARK_GRAY, LIGHT_BLUE, LIGHT_GREEN, LIGHT_CYAN, LIGHT_RED, LIGHT_MAGENTA, LIGHT_YELLOW, WHITE
 };
 
-// Установка цвета
+// установка цвета
 inline void setColor(ConsoleColor textColor, ConsoleColor bgColor) {
 #ifdef _WIN32
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -24,7 +24,7 @@ inline void setColor(ConsoleColor textColor, ConsoleColor bgColor) {
 #endif
 }
 
-// Сброс цвета
+// сброс цвета
 inline void resetColor() {
 #ifdef _WIN32
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -32,7 +32,7 @@ inline void resetColor() {
 #endif
 }
 
-// Чтение клавиши
+// чтение клавиши
 inline int getInput() {
     int ch = _getch();
     if (ch == 0 || ch == 224) {
@@ -43,11 +43,11 @@ inline int getInput() {
     }
     else if (ch == 'w' || ch == 'W') return 'U';
     else if (ch == 's' || ch == 'S') return 'D';
-    else if (ch == 13) return 'E'; // Enter
+    else if (ch == 13) return 'E'; // enter
     return 0;
 }
 
-// Структура строки таблицы
+// структура строки таблицы
 struct PatientTableRow {
     std::string name;
     std::string birthDate;
@@ -55,7 +55,7 @@ struct PatientTableRow {
     int id_patient;
 };
 
-// Считаем видимую длину UTF-8 строки
+// считывание видимой длинны UTF-8 строки
 inline size_t utf8_len(const std::string& s) {
     size_t count = 0;
     for (unsigned char c : s) {
@@ -64,13 +64,13 @@ inline size_t utf8_len(const std::string& s) {
     return count;
 }
 
-// Интерфейс таблицы
+// интерфейс таблицы
 inline int interactiveTable(const std::vector<PatientTableRow>& rows) {
     if (rows.empty()) return -1;
 
     int selected = 0;
 
-    // Вычисляем ширину колонок по видимым символам
+    // вычисление ширины колонок по видимым символам
     size_t widthName = 4;
     size_t widthBirth = 10;
     size_t widthAge = 3;
@@ -87,13 +87,12 @@ inline int interactiveTable(const std::vector<PatientTableRow>& rows) {
     const size_t gap = 2; // пробел между колонками
 
 #ifdef _WIN32
-    // Включаем поддержку ANSI кодов (Windows 10+)
+    // включение поддержки ANSI кодов
     HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
     DWORD dwMode = 0;
     GetConsoleMode(hOut, &dwMode);
     SetConsoleMode(hOut, dwMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
 #endif
-
     while (true) {
         system("cls");
         std::cout << "Use arrow keys or W/S to navigate, Enter to select\n\n";
@@ -110,25 +109,25 @@ inline int interactiveTable(const std::vector<PatientTableRow>& rows) {
         for (size_t i = 0; i < rows.size(); ++i) {
             const auto& r = rows[i];
 
-            // Подготавливаем паддинг для UTF-8 строк
+            // подготавка расстояния для UTF-8 строк
             size_t padName = (widthName > utf8_len(r.name)) ? (widthName - utf8_len(r.name)) : 0;
             size_t padBirth = (widthBirth > utf8_len(r.birthDate)) ? (widthBirth - utf8_len(r.birthDate)) : 0;
             size_t padAge = (widthAge > utf8_len(r.age)) ? (widthAge - utf8_len(r.age)) : 0;
 
-            // Формируем строки с паддингом
+			// форматирование строк с расстоянием
             std::string nameStr = r.name + std::string(padName + gap, ' ');
             std::string birthStr = r.birthDate + std::string(padBirth + gap, ' ');
             std::string ageStr = r.age + std::string(padAge + gap, ' ');
 
             if ((int)i == selected) {
-                // Выделенная строка: фон синий, разные цвета текста для колонок
+                // выделенная строка: фон синий
                 setColor(LIGHT_CYAN, BLUE);   std::cout << nameStr;
                 setColor(LIGHT_GREEN, BLUE);  std::cout << birthStr;
                 setColor(LIGHT_YELLOW, BLUE); std::cout << ageStr << std::endl;
                 resetColor();
             }
             else {
-                // Обычная строка: фон черный, разные цвета для колонок
+                // обычная строка: фон черный
                 setColor(CYAN, BLACK);   std::cout << nameStr;
                 setColor(GREEN, BLACK);  std::cout << birthStr;
                 setColor(YELLOW, BLACK); std::cout << ageStr << std::endl;
