@@ -1,4 +1,0 @@
-C:\Users\user\Downloads\c++\tracker-care-of\Debug\LIBPQ.dll
-C:\Users\user\Downloads\c++\tracker-care-of\Debug\libssl-3.dll
-C:\Users\user\Downloads\c++\tracker-care-of\Debug\libcrypto-3.dll
-C:\Users\user\Downloads\c++\tracker-care-of\tracker-care-of\Debug\tracker-.71922555.Up2Date
