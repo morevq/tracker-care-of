@@ -1,143 +1,108 @@
 #pragma once
+
+#include <algorithm>
+#include <iomanip>
 #include <iostream>
-#include <vector>
 #include <string>
-#include <conio.h>
-#include <optional>
-#include <cstdlib>
+#include <vector>
 
-#ifdef _WIN32
-#include <windows.h>
-#endif
+#include "console-utils.h"
+#include "interactive-table.h"
 
-// цвета консоли
-enum ConsoleColor {
-    BLACK = 0, BLUE, GREEN, CYAN, RED, MAGENTA, YELLOW, LIGHT_GRAY,
-    DARK_GRAY, LIGHT_BLUE, LIGHT_GREEN, LIGHT_CYAN, LIGHT_RED, LIGHT_MAGENTA, LIGHT_YELLOW, WHITE
-};
+static void drawHeader(size_t widthName, size_t widthBirth, size_t widthAge, size_t gap) {
+    setColor(ConsoleColor::LightCyan, ConsoleColor::Blue);
+    std::cout << std::left << std::setw(static_cast<int>(widthName + gap)) << "Name";
 
-// установка цвета
-inline void setColor(ConsoleColor textColor, ConsoleColor bgColor) {
-#ifdef _WIN32
-    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    SetConsoleTextAttribute(hConsole, (bgColor << 4) | textColor);
-#endif
+    setColor(ConsoleColor::LightGreen, ConsoleColor::Blue);
+    std::cout << std::left << std::setw(static_cast<int>(widthBirth + gap)) << "Birth Date";
+
+    setColor(ConsoleColor::Yellow, ConsoleColor::Blue);
+    std::cout << std::left << std::setw(static_cast<int>(widthAge + gap)) << "Age";
+
+    resetColor();
+    std::cout << '\n';
 }
 
-// сброс цвета
-inline void resetColor() {
-#ifdef _WIN32
-    HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
-    SetConsoleTextAttribute(hConsole, (BLACK << 4) | WHITE);
-#endif
-}
-
-// чтение клавиши
-inline int getInput() {
-    int ch = _getch();
-    if (ch == 0 || ch == 224) {
-        ch = _getch();
-        if (ch == 72) return 'U'; // вверх
-        if (ch == 80) return 'D'; // вниз
-        return 0;
-    }
-    else if (ch == 'w' || ch == 'W') return 'U';
-    else if (ch == 's' || ch == 'S') return 'D';
-    else if (ch == 13) return 'E'; // enter
-    return 0;
-}
-
-// структура строки таблицы
-struct PatientTableRow {
-    std::string name;
-    std::string birthDate;
-    std::string age;
-    int id_patient;
-};
-
-// считывание видимой длинны UTF-8 строки
-inline size_t utf8_len(const std::string& s) {
-    size_t count = 0;
-    for (unsigned char c : s) {
-        if ((c & 0xC0) != 0x80) ++count;
-    }
-    return count;
-}
-
-// интерфейс таблицы
 inline int interactiveTable(const std::vector<PatientTableRow>& rows) {
     if (rows.empty()) return -1;
 
     int selected = 0;
 
-    // вычисление ширины колонок по видимым символам
     size_t widthName = 4;
     size_t widthBirth = 10;
     size_t widthAge = 3;
 
     for (const auto& r : rows) {
-        size_t ln = utf8_len(r.name);
-        size_t lb = utf8_len(r.birthDate);
-        size_t la = utf8_len(r.age);
-        if (ln > widthName) widthName = ln;
-        if (lb > widthBirth) widthBirth = lb;
-        if (la > widthAge) widthAge = la;
+        widthName = std::max(widthName, utf8_len(r.name));
+        widthBirth = std::max(widthBirth, utf8_len(r.birth_date));
+        widthAge = std::max(widthAge, utf8_len(r.age));
     }
 
-    const size_t gap = 2; // пробел между колонками
+    const size_t gap = 2;
 
-#ifdef _WIN32
-    // включение поддержки ANSI кодов
-    HANDLE hOut = GetStdHandle(STD_OUTPUT_HANDLE);
-    DWORD dwMode = 0;
-    GetConsoleMode(hOut, &dwMode);
-    SetConsoleMode(hOut, dwMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
-#endif
+    auto pad = [&](const std::string& s, size_t w) {
+        const size_t visible = utf8_len(s);
+        return s + std::string((w > visible ? w - visible : 0) + gap, ' ');
+    };
+
     while (true) {
         system("cls");
-        std::cout << "Use arrow keys or W/S to navigate, Enter to select\n\n";
 
-        // Заголовок таблицы
-        std::cout << std::left
-            << std::setw(widthName + gap) << "Name"
-            << std::setw(widthBirth + gap) << "Birth Date"
-            << std::setw(widthAge + gap) << "Age"
-            << std::endl;
+        std::cout << "Use arrow keys or W/S to navigate, Enter to select, Esc to exit\n\n";
 
-        std::cout << std::string(widthName + widthBirth + widthAge + gap * 3, '-') << std::endl;
+        drawHeader(widthName, widthBirth, widthAge, gap);
+
+        std::cout << std::string(widthName + widthBirth + widthAge + gap * 3, '-') << '\n';
 
         for (size_t i = 0; i < rows.size(); ++i) {
             const auto& r = rows[i];
 
-            // подготавка расстояния для UTF-8 строк
-            size_t padName = (widthName > utf8_len(r.name)) ? (widthName - utf8_len(r.name)) : 0;
-            size_t padBirth = (widthBirth > utf8_len(r.birthDate)) ? (widthBirth - utf8_len(r.birthDate)) : 0;
-            size_t padAge = (widthAge > utf8_len(r.age)) ? (widthAge - utf8_len(r.age)) : 0;
+            const std::string nameStr = pad(r.name, widthName);
+            const std::string birthStr = pad(r.birth_date, widthBirth);
+            const std::string ageStr = pad(r.age, widthAge);
 
-			// форматирование строк с расстоянием
-            std::string nameStr = r.name + std::string(padName + gap, ' ');
-            std::string birthStr = r.birthDate + std::string(padBirth + gap, ' ');
-            std::string ageStr = r.age + std::string(padAge + gap, ' ');
+            if (static_cast<int>(i) == selected) {
+                setColor(ConsoleColor::LightCyan, ConsoleColor::Blue);
+                std::cout << nameStr;
 
-            if ((int)i == selected) {
-                // выделенная строка: фон синий
-                setColor(LIGHT_CYAN, BLUE);   std::cout << nameStr;
-                setColor(LIGHT_GREEN, BLUE);  std::cout << birthStr;
-                setColor(LIGHT_YELLOW, BLUE); std::cout << ageStr << std::endl;
+                setColor(ConsoleColor::LightGreen, ConsoleColor::Blue);
+                std::cout << birthStr;
+
+                setColor(ConsoleColor::Yellow, ConsoleColor::Blue);
+                std::cout << ageStr << '\n';
                 resetColor();
-            }
-            else {
-                // обычная строка: фон черный
-                setColor(CYAN, BLACK);   std::cout << nameStr;
-                setColor(GREEN, BLACK);  std::cout << birthStr;
-                setColor(YELLOW, BLACK); std::cout << ageStr << std::endl;
+            } else {
+                setColor(ConsoleColor::Cyan, ConsoleColor::Black);
+                std::cout << nameStr;
+
+                setColor(ConsoleColor::Green, ConsoleColor::Black);
+                std::cout << birthStr;
+
+                setColor(ConsoleColor::Yellow, ConsoleColor::Black);
+                std::cout << ageStr << '\n';
                 resetColor();
             }
         }
 
-        int input = getInput();
-        if (input == 'U') selected = (selected - 1 + rows.size()) % rows.size();
-        else if (input == 'D') selected = (selected + 1) % rows.size();
-        else if (input == 'E') return rows[selected].id_patient;
+        const InputAction action = getInput();
+
+        switch (action) {
+            case InputAction::Up:
+                selected = (selected + static_cast<int>(rows.size()) - 1) % static_cast<int>(rows.size());
+                break;
+
+            case InputAction::Down:
+                selected = (selected + 1) % static_cast<int>(rows.size());
+                break;
+
+            case InputAction::Enter:
+                return rows[static_cast<size_t>(selected)].id_patient;
+
+            case InputAction::Escape:
+                return -1;
+
+            default:
+                break;
+        }
     }
 }

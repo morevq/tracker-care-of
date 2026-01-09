@@ -1,50 +1,70 @@
 ﻿#include <iostream>
-#include <libpq-fe.h>
-#include <filesystem>
 #include <vector>
 #include <string>
 #include <optional>
+#include <algorithm>
+
+#include <libpq-fe.h>
 
 #include "db/postgre-db.h"
 #include "repositories/patient-repository.h"
 #include "ui/interactive-table.h"
-
-using namespace std;
+#include "ui/show-anamnesis-ui.h"
 
 int main() {
     setlocale(LC_ALL, "ru_RU.UTF-8");
 
     try {
         PostgreDB db;
-        string my_user_uuid = "5f9f079f-b158-4079-a45d-9477d2c26356";
+        std::string my_user_uuid = "5f9f079f-b158-4079-a45d-9477d2c26356";
+
         PGconn* conn = db.getConnection();
 
         PatientRepository patientRepo(conn);
         auto patientsData = patientRepo.getByUserUUID(my_user_uuid);
 
         if (patientsData.empty()) {
-            cout << "No patients found." << endl;
+            std::cout << "No patients found.\n";
             return 0;
         }
 
-        // подготовка данных для интерактивной таблицы
-        vector<PatientTableRow> tablePatients;
+        std::vector<PatientTableRow> tablePatients;
+        tablePatients.reserve(patientsData.size());
+
         for (const auto& p : patientsData) {
-            PatientTableRow row;
-            row.name = p.name;
-			row.birthDate = p.birth_date.value_or("-");
-            row.age = p.getAge();
-            row.id_patient = p.id_patient;
-            tablePatients.push_back(row);
+            tablePatients.push_back(PatientTableRow{
+                .id_patient = p.id_patient,
+                .name = p.name,
+                .birth_date = p.birth_date.value_or("-"),
+                .age = p.getAge()
+                });
         }
 
-        int selectedId = interactiveTable(tablePatients);
+        while (true) {
+            int selectedId = interactiveTable(tablePatients);
 
-        cout << "\nYou selected patient with ID: " << selectedId << endl;
+            if (selectedId == -1)
+                break;
 
+            auto it = std::find_if(
+                tablePatients.begin(),
+                tablePatients.end(),
+                [&](const PatientTableRow& r) {
+                    return r.id_patient == selectedId;
+                }
+            );
+
+            if (it != tablePatients.end()) {
+                showAnamnesisUI(
+                    it->id_patient,
+                    conn,
+                    it->name
+                );
+            }
+        }
     }
-    catch (const exception& e) {
-        cerr << "Fatal error: " << e.what() << endl;
+    catch (const std::exception& e) {
+        std::cerr << "Fatal error: " << e.what() << '\n';
         return 1;
     }
 

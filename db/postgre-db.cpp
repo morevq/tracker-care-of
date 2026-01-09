@@ -86,7 +86,6 @@ void PostgreDB::add_anamnesis(
         "VALUES ($1, $2, $3);";
 
     std::string id_str = std::to_string(id_patient);
-
     const char* params[] = {
         id_str.c_str(),
         description.c_str(),
@@ -116,7 +115,6 @@ void PostgreDB::add_water_event(int id_patient) {
         "INSERT INTO water (id_patient) VALUES ($1);";
 
     std::string id_str = std::to_string(id_patient);
-
     const char* params[] = {
         id_str.c_str()
     };
@@ -149,7 +147,6 @@ void PostgreDB::set_water_frequency(
         "WHERE id_patient = $3;";
 
 	std::string id_str = std::to_string(id_patient);
-
     const char* params[] = {
         frequency.c_str(),
         measure.c_str(),

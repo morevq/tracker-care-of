@@ -11,7 +11,7 @@ private:
 	PGconn* connection;
 
 public:
-	PatientRepository(PGconn* conn);
+	PatientRepository(PGconn* connnection);
 
 	std::vector<Patient> getByUserUUID(const std::string& user_uuid);
 };
