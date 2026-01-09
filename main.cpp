@@ -1,4 +1,7 @@
 ﻿#include <iostream>
+#include <libpq-fe.h>
+
+#include <filesystem>
 
 #include "db/postgre-db.h"
 #include "repositories/patient-repository.h"

@@ -2,8 +2,11 @@ cmake_minimum_required(VERSION 3.25)
 project(tracker-care-of LANGUAGES C CXX)
 
 if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
-    set(CMAKE_TOOLCHAIN_FILE "C:/Users/user/Documents/visual-studio-libraries/vcpkg/scripts/buildsystems/vcpkg.cmake"
-        CACHE STRING "")
+    if(DEFINED ENV{VCPKG_ROOT})
+        set(CMAKE_TOOLCHAIN_FILE "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake" CACHE STRING "")
+    else()
+        message(FATAL_ERROR "VCPKG_ROOT environment variable is not set!")
+    endif()
 endif()
 
 set(CMAKE_CXX_STANDARD 20)
@@ -15,12 +18,9 @@ find_package(unofficial-argon2 CONFIG REQUIRED)
 
 add_executable(main
     main.cpp
-
     services/auth-service.cpp
-
     db/postgre-db.cpp
     db/env-parser.cpp
-
     repositories/patient-repository.cpp
 )
 
@@ -30,3 +30,8 @@ target_link_libraries(main
     unofficial::argon2::libargon2
 )
 
+set_target_properties(main PROPERTIES
+    VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+)
+
+target_include_directories(main PRIVATE ${CMAKE_SOURCE_DIR}/include)
