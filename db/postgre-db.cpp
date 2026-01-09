@@ -1,14 +1,14 @@
 #include <iostream>
 
-#include "db/postgre-db.h"
-#include "db/env-parser.h"
+#include "postgre-db.h"
+#include "env-parser.h"
 
 void PostgreDB::check_connection() {
     if (PQstatus(connection) == CONNECTION_OK) {
         std::cout << "Successful connection to DB\n";
     }
     else {
-        std::cerr << "Error: " << PQerrorMessage(connection) << std::endl;
+		throw std::runtime_error("Failed to connect to the database");
     }
 }
 
@@ -30,10 +30,6 @@ PostgreDB::PostgreDB() {
 
     connection = PQconnectdbParams(keywords, values, 0);
 
-    #ifdef _WIN32
-    PQsetClientEncoding(connection, "WIN1251");
-    #endif
-
     check_connection();
 }
 
@@ -41,7 +37,6 @@ PostgreDB::~PostgreDB() {
     PQfinish(connection);
     std::cout << "Connection closed\n";
 }
-
 
 int PostgreDB::create_patient(
     const std::string& user_uuid,
@@ -177,4 +172,8 @@ void PostgreDB::set_water_frequency(
     }
 
     PQclear(res);
+}
+
+PGconn* PostgreDB::get_connection() {
+    return connection;
 }
