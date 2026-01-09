@@ -1,5 +1,8 @@
 {
+  "name": "tracker-care-of",
   "dependencies": [
-    "fmt"
+    "fmt",
+    "argon2",
+    "libpq"
   ]
 }
