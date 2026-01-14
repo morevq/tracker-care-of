@@ -15,10 +15,26 @@ static std::string waterDateOnly(const std::string& ts) {
     return ts;
 }
 
+static std::string timesWordRu(int n) {
+    const int mod100 = n % 100;
+    if (mod100 >= 11 && mod100 <= 14) return "times";
+
+    switch (n % 10) {
+        case 1: return "time";
+        case 2:
+        case 3:
+        case 4: return "times";
+        default: return "times";
+    }
+
+    return "times";
+}
+
 static std::string waterFreqText(const Water& w) {
     if (w.frequency <= 0) return "-";
-    if (w.frequencyMeasure.empty()) return std::to_string(w.frequency);
-    return std::to_string(w.frequency) + " " + w.frequencyMeasure;
+    if (w.frequencyMeasure.empty()) return std::to_string(w.frequency) + " " + timesWordRu(w.frequency);
+
+    return std::to_string(w.frequency) + " " + timesWordRu(w.frequency) + " " + w.frequencyMeasure;
 }
 
 static void drawHeader(

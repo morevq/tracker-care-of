@@ -1,10 +1,10 @@
-#pragma once
+﻿#pragma once
 
 #include <string>
 
 struct Water {
-	int idPatient;
-	std::string lastWater;
-	int frequency;
-	std::string frequencyMeasure;
+    int idPatient;
+    std::string lastWater;
+    int frequency;
+    std::string frequencyMeasure;
 };
