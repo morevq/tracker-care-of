@@ -26,6 +26,7 @@ add_executable(main
     repositories/anamnesis-repository.cpp
     ui/show-anamnesis-ui.cpp
     ui/console-utils.cpp
+    repositories/water-repository.cpp
 )
 
 target_link_libraries(main
