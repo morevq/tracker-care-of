@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS water(
 
 CREATE TABLE IF NOT EXISTS water_frequency(
 	id_frequency  SERIAL PRIMARY KEY,
-	frequency TEXT DEFAULT NULL,
+	frequency INTEGER DEFAULT NULL,
 	frequency_measure TEXT DEFAULT NULL,
 	id_patient INTEGER NOT NULL REFERENCES patient(id_patient) ON DELETE CASCADE
 );
