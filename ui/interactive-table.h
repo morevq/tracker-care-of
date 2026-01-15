@@ -15,6 +15,6 @@ struct PatientTableRow {
     Water water;
 };
 
-int interactiveTable(const std::vector<PatientTableRow>& rows);
+int interactiveTable(const std::vector<PatientTableRow>& rows, int& selectedIndex);
 
 #include "interactive-table.inl"

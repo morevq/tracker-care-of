@@ -63,8 +63,9 @@ int main() {
             });
         }
 
+        int selectedIndex = 0;
         while (true) {
-            int selectedId = interactiveTable(tablePatients);
+            int selectedId = interactiveTable(tablePatients, selectedIndex);
 
             if (selectedId == -1)
                 break;
