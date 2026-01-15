@@ -20,14 +20,14 @@ add_executable(main
     main.cpp
     services/auth-service.cpp
     db/postgre-db.cpp
-    db/env-parser.cpp
+    "include/env/env-parser.cpp"
     repositories/patient-repository.cpp
     models/patient.cpp
     repositories/anamnesis-repository.cpp
     ui/show-anamnesis-ui.cpp
     ui/console-utils.cpp
     repositories/water-repository.cpp
-)
+ "include/crypto/password-hasher.h" "include/crypto/password-hasher.cpp")
 
 target_link_libraries(main
     PRIVATE fmt::fmt
