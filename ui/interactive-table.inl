@@ -64,10 +64,8 @@ static void drawHeader(
     std::cout << '\n';
 }
 
-inline int interactiveTable(const std::vector<PatientTableRow>& rows) {
+inline int interactiveTable(const std::vector<PatientTableRow>& rows, int& selectedIndex) {
     if (rows.empty()) return -1;
-
-    size_t selected = 0;
 
     size_t widthName = 4;
     size_t widthBirth = 10;
@@ -117,7 +115,7 @@ inline int interactiveTable(const std::vector<PatientTableRow>& rows) {
             const std::string waterDateStr = pad(lastWaterDate, widthWaterDate);
             const std::string waterFreqStr = pad(freqText, widthWaterFreq);
 
-            const bool isSelected = i == selected;
+            const bool isSelected = i == selectedIndex;
 
             if (isSelected) {
                 setColor(ConsoleColor::LightCyan, ConsoleColor::Blue);
@@ -160,19 +158,19 @@ inline int interactiveTable(const std::vector<PatientTableRow>& rows) {
 
         switch (action) {
             case InputAction::Up:
-                if (selected == 0) {
-                    selected = rows.size() - 1;
+                if (selectedIndex == 0) {
+                    selectedIndex = rows.size() - 1;
                 } else {
-                    --selected;
+                    --selectedIndex;
                 }
                 break;
 
             case InputAction::Down:
-                selected = (selected + 1) % rows.size();
+                selectedIndex = (selectedIndex + 1) % rows.size();
                 break;
 
             case InputAction::Enter:
-                return rows[selected].id_patient;
+                return rows[selectedIndex].id_patient;
 
             case InputAction::Escape:
                 return -1;
