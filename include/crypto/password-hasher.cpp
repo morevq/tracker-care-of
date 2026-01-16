@@ -3,6 +3,8 @@
 #include <argon2.h>
 #include <iostream>
 #include <random>
+#include <stdexcept>
+#include <unordered_map>
 #include <vector>
 
 #include "env/env-parser.h"
@@ -15,23 +17,32 @@ struct Argon2Params {
 	std::size_t saltLength;
 };
 
+static std::size_t getRequiredUlong(
+	const std::unordered_map<std::string, std::string>& env,
+	const char* key
+) {
+	const auto it = env.find(key);
+	if (it == env.end() || it->second.empty()) {
+		throw std::runtime_error(std::string("Missing .env key: ") + key);
+	}
+	return std::stoul(it->second);
+}
+
 const Argon2Params& getParams() {
-	Argon2Params params;
+	static Argon2Params params{};
 	static bool initialized = false;
 
-	try {
-		if (!initialized) {
-			std::unordered_map<std::string, std::string> env = load_env("../../.env");
-			params.memoryCost = std::stoul(env["ARGON2_MEMORY_COST"]);
-			params.timeCost = std::stoul(env["ARGON2_TIME_COST"]);
-			params.parallelism = std::stoul(env["ARGON2_PARALLELISM"]);
-			params.hashLength = std::stoul(env["ARGON2_HASH_LENGTH"]);
-			params.saltLength = std::stoul(env["ARGON2_SALT_LENGTH"]);
-			initialized = true;
-		}
-	}
-	catch (const std::exception& e) {
-		std::cerr << "Failed to load Argon2 parameters from .env: " + std::string(e.what());
+	if (!initialized) {
+		const std::unordered_map<std::string, std::string> env = load_env(".env");
+
+		// match actual .env keys
+		params.timeCost = getRequiredUlong(env, "ARGON2_T_COST");
+		params.memoryCost = getRequiredUlong(env, "ARGON2_M_COST_KIB");
+		params.parallelism = getRequiredUlong(env, "ARGON2_PARALLELISM");
+		params.saltLength = getRequiredUlong(env, "ARGON2_SALT_LEN");
+		params.hashLength = getRequiredUlong(env, "ARGON2_HASH_LEN");
+
+		initialized = true;
 	}
 
 	return params;
@@ -53,8 +64,9 @@ std::vector<char> generateSalt(std::size_t length) {
 
 std::string PasswordHasher::hashPassword(const std::string& password) {
 	const Argon2Params& params = getParams();
-	std::vector<char> salt = generateSalt(params.saltLength);
-	char hashBuffer[128];
+
+	const std::vector<char> salt = generateSalt(params.saltLength);
+	char hashBuffer[512]{};
 
 	const int rc = argon2id_hash_encoded(
 		params.timeCost,
@@ -70,8 +82,27 @@ std::string PasswordHasher::hashPassword(const std::string& password) {
 	);
 
 	if (rc != ARGON2_OK) {
-		std::cerr << "Error hashing password: " + std::string(argon2_error_message(rc));
+		throw std::runtime_error(std::string("Error hashing password: ") + argon2_error_message(rc));
 	}
 
 	return std::string(hashBuffer);
+}
+
+bool PasswordHasher::verifyPassword(const std::string& password, const std::string& hashedPassword) {
+	const int rc = argon2id_verify(
+		hashedPassword.c_str(),
+		password.data(),
+		password.size()
+	);
+
+	if (rc == ARGON2_OK) {
+		return true;
+	}
+
+	if (rc == ARGON2_VERIFY_MISMATCH) {
+		return false;
+	}
+
+	std::cerr << "Error verifying password: " + std::string(argon2_error_message(rc));
+	return false;
 }
