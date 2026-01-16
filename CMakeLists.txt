@@ -18,16 +18,17 @@ find_package(unofficial-argon2 CONFIG REQUIRED)
 
 add_executable(main
     main.cpp
-    services/auth-service.cpp
     db/postgre-db.cpp
-    db/env-parser.cpp
-    repositories/patient-repository.cpp
+    include/crypto/password-hasher.cpp
+    include/env/env-parser.cpp
     models/patient.cpp
     repositories/anamnesis-repository.cpp
-    ui/show-anamnesis-ui.cpp
-    ui/console-utils.cpp
+    repositories/patient-repository.cpp
+    repositories/user-repository.cpp
     repositories/water-repository.cpp
-)
+    services/auth-service.cpp
+    ui/console-utils.cpp
+    ui/show-anamnesis-ui.cpp)
 
 target_link_libraries(main
     PRIVATE fmt::fmt
