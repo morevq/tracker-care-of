@@ -10,6 +10,7 @@
 #include "db/postgre-db.h"
 #include "repositories/patient-repository.h"
 #include "repositories/water-repository.h"
+#include "services/auth-service.h"
 #include "ui/interactive-table.h"
 #include "ui/show-anamnesis-ui.h"
 
@@ -18,15 +19,43 @@ int main() {
 
     try {
         PostgreDB db;
-        std::string my_user_uuid = "5f9f079f-b158-4079-a45d-9477d2c26356";
-
         PGconn* conn = db.getConnection();
 
+        AuthService auth(conn);
+
+        std::cout << "1) Register\n2) Login\n> ";
+        int mode = 0;
+        std::cin >> mode;
+
+        std::string email;
+        std::string password;
+
+        std::cout << "Email: ";
+        std::cin >> email;
+        std::cout << "Password: ";
+        std::cin >> password;
+
+        std::optional<std::string> my_user_uuid;
+        if (mode == 1) {
+            my_user_uuid = auth.registerUser(email, password);
+        } else {
+            my_user_uuid = auth.loginUser(email, password);
+        }
+
+
+        std::string my_user_uuid_str;
+
+        if (!my_user_uuid.has_value()) {
+            std::cerr << "Auth failed.\n";
+            return 1;
+        }
+        my_user_uuid_str = *my_user_uuid;
+
         PatientRepository patientRepo(conn);
-        auto patientsData = patientRepo.getByUserUUID(my_user_uuid);
+        auto patientsData = patientRepo.getByUserUUID(my_user_uuid_str);
 
         WaterRepository waterRepo(conn);
-        const auto waterData = waterRepo.getByUserUUID(my_user_uuid);
+        const auto waterData = waterRepo.getByUserUUID(my_user_uuid_str);
 
         std::unordered_map<int, Water> waterByPatientId;
         waterByPatientId.reserve(waterData.size());
