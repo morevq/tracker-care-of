@@ -13,6 +13,51 @@
 #include "services/auth-service.h"
 #include "ui/interactive-table.h"
 #include "ui/show-anamnesis-ui.h"
+#include "ui/add-patient-ui.h"
+#include "ui/console-utils.h"
+
+static std::vector<PatientTableRow> loadPatientsTable(
+    PGconn* conn,
+    const std::string& userUuid
+) {
+    PatientRepository patientRepo(conn);
+    auto patientsData = patientRepo.getByUserUUID(userUuid);
+
+    WaterRepository waterRepo(conn);
+    const auto waterData = waterRepo.getByUserUUID(userUuid);
+
+    std::unordered_map<int, Water> waterByPatientId;
+    waterByPatientId.reserve(waterData.size());
+    for (const auto& w : waterData) {
+        waterByPatientId.emplace(w.idPatient, w);
+    }
+
+    std::vector<PatientTableRow> tablePatients;
+    tablePatients.reserve(patientsData.size());
+
+    for (const auto& p : patientsData) {
+        Water water{};
+        water.idPatient = p.id_patient;
+        water.lastWater = "-";
+        water.frequency = -1;
+        water.frequencyMeasure = "";
+
+        const auto itWater = waterByPatientId.find(p.id_patient);
+        if (itWater != waterByPatientId.end()) {
+            water = itWater->second;
+        }
+
+        tablePatients.push_back(PatientTableRow{
+            .id_patient = p.id_patient,
+            .name = p.name,
+            .birth_date = p.birth_date.value_or("-"),
+            .age = p.getAge(),
+            .water = water
+            });
+    }
+
+    return tablePatients;
+}
 
 int main() {
     setlocale(LC_ALL, "ru_RU.UTF-8");
@@ -38,66 +83,57 @@ int main() {
         std::optional<std::string> my_user_uuid;
         if (mode == 1) {
             my_user_uuid = auth.registerUser(email, password);
-        } else {
+        }
+        else {
             my_user_uuid = auth.loginUser(email, password);
         }
-
-
-        std::string my_user_uuid_str;
 
         if (!my_user_uuid.has_value()) {
             std::cerr << "Auth failed.\n";
             return 1;
         }
-        my_user_uuid_str = *my_user_uuid;
 
-        PatientRepository patientRepo(conn);
-        auto patientsData = patientRepo.getByUserUUID(my_user_uuid_str);
+        const std::string my_user_uuid_str = *my_user_uuid;
 
-        WaterRepository waterRepo(conn);
-        const auto waterData = waterRepo.getByUserUUID(my_user_uuid_str);
+        auto tablePatients = loadPatientsTable(conn, my_user_uuid_str);
+        int selectedIndex = 0;
 
-        std::unordered_map<int, Water> waterByPatientId;
-        waterByPatientId.reserve(waterData.size());
-        for (const auto& w : waterData) {
-            waterByPatientId.emplace(w.idPatient, w);
-        }
+        while (true) {
+            if (tablePatients.empty()) {
+                system("cls");
+                std::cout << "No patients found.\n";
+                std::cout << "Press A to add patient, Esc to exit\n";
 
-        if (patientsData.empty()) {
-            std::cout << "No patients found.\n";
-            return 0;
-        }
-
-        std::vector<PatientTableRow> tablePatients;
-        tablePatients.reserve(patientsData.size());
-
-        for (const auto& p : patientsData) {
-            Water water{};
-            water.idPatient = p.id_patient;
-            water.lastWater = "-";
-            water.frequency = -1;
-            water.frequencyMeasure = "";
-
-            const auto itWater = waterByPatientId.find(p.id_patient);
-            if (itWater != waterByPatientId.end()) {
-                water = itWater->second;
+                const InputAction a = getInput();
+                if (a == InputAction::Escape) break;
+                if (a == InputAction::Add) {
+                    if (addPatientUI(my_user_uuid_str, conn)) {
+                        tablePatients = loadPatientsTable(conn, my_user_uuid_str);
+                        selectedIndex = 0;
+                    }
+                }
+                continue;
             }
 
-            tablePatients.push_back(PatientTableRow{
-                .id_patient = p.id_patient,
-                .name = p.name,
-                .birth_date = p.birth_date.value_or("-"),
-                .age = p.getAge(),
-                .water = water
-            });
-        }
-
-        int selectedIndex = 0;
-        while (true) {
             int selectedId = interactiveTable(tablePatients, selectedIndex);
 
-            if (selectedId == -1)
-                break;
+            if (selectedId == -1) {
+            #ifdef _WIN32
+                system("cls");
+            #else
+				system("clear");
+            #endif
+                std::cout << "Esc - Exit, + - Add patient\n";
+                const InputAction a = getInput();
+                if (a == InputAction::Escape) break;
+                if (a == InputAction::Add) {
+                    if (addPatientUI(my_user_uuid_str, conn)) {
+                        tablePatients = loadPatientsTable(conn, my_user_uuid_str);
+                        selectedIndex = 0;
+                    }
+                }
+                continue;
+            }
 
             auto it = std::find_if(
                 tablePatients.begin(),
@@ -113,6 +149,9 @@ int main() {
                     conn,
                     it->name
                 );
+
+                tablePatients = loadPatientsTable(conn, my_user_uuid_str);
+                selectedIndex = std::min<int>(selectedIndex, static_cast<int>(tablePatients.size()) - 1);
             }
         }
     }

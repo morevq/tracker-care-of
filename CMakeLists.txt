@@ -27,6 +27,8 @@ add_executable(main
     repositories/user-repository.cpp
     repositories/water-repository.cpp
     services/auth-service.cpp
+    ui/add-anamnesis-ui.cpp
+    ui/add-patient-ui.cpp
     ui/console-utils.cpp
     ui/show-anamnesis-ui.cpp)
 
