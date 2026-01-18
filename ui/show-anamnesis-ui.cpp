@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "../repositories/anamnesis-repository.h"
+#include "add-anamnesis-ui.h"
 #include "console-utils.h"
 
 void showAnamnesisUI(
@@ -28,6 +29,12 @@ void showAnamnesisUI(
                 a.date,
                 a.description,
             });
+        }
+
+        if (!rows.empty()) {
+            selected = std::clamp(selected, 0, static_cast<int>(rows.size()) - 1);
+        } else {
+            selected = 0;
         }
 
         size_t widthDate = 10;
@@ -54,7 +61,7 @@ void showAnamnesisUI(
         resetColor();
         std::cout << "\n\n";
 
-        std::cout << "Use arrows / W S to navigate, Esc to go back\n\n";
+        std::cout << "Use arrows / W S to navigate, + to add, Esc to go back\n\n";
 
         std::cout << std::left
                   << std::setw(static_cast<int>(widthDate + gap)) << "Date"
@@ -105,6 +112,10 @@ void showAnamnesisUI(
                 if (!rows.empty()) {
                     selected = (selected + 1) % static_cast<int>(rows.size());
                 }
+                break;
+
+            case InputAction::Add:
+                addAnamnesisUI(patientId, conn);
                 break;
 
             case InputAction::Escape:

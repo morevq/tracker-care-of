@@ -15,8 +15,6 @@ bool addPatientUI(const std::string& user_uuid, PGconn* connection) {
     std::cout << "Add patient\n";
     std::cout << "Name (empty = cancel): ";
 
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-
     std::string name;
     std::getline(std::cin, name);
 
