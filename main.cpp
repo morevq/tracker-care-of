@@ -117,12 +117,20 @@ int main() {
 
             int selectedId = interactiveTable(tablePatients, selectedIndex);
 
+            if (selectedId == -2) {
+                if (addPatientUI(my_user_uuid_str, conn)) {
+                    tablePatients = loadPatientsTable(conn, my_user_uuid_str);
+                    selectedIndex = 0;
+                }
+                continue;
+            }
+
             if (selectedId == -1) {
-            #ifdef _WIN32
+#ifdef _WIN32
                 system("cls");
-            #else
-				system("clear");
-            #endif
+#else
+                system("clear");
+#endif
                 std::cout << "Esc - Exit, + - Add patient\n";
                 const InputAction a = getInput();
                 if (a == InputAction::Escape) break;
