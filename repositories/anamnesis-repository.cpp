@@ -59,3 +59,35 @@ std::vector<Anamnesis> AnamnesisRepository::getByPatientId(int id_patient) {
 	PQclear(res);
 	return patients;
 }
+
+void AnamnesisRepository::createAnamnesis(int id_patient, std::string description, std::optional<std::string> photo_url) {
+	const char* params[3] = { std::to_string(id_patient).c_str(), description.c_str() };
+	if (!photo_url.has_value()) {
+		params[2] = nullptr;
+	}
+	else {
+		params[2] = photo_url->c_str();
+	}
+
+	const char* query =
+		"INSERT INTO anamnesis (id_patient, description, photo_url) VALUES ($1, $2, $3)";
+
+	PGresult* res = PQexecParams(
+		connection,
+		query,
+		2,
+		nullptr,
+		params,
+		nullptr,
+		nullptr,
+		0
+	);
+
+	if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+		std::cerr << "Error inserting anamnesis: " << PQerrorMessage(connection) << std::endl;
+		PQclear(res);
+		return;
+	}
+
+	PQclear(res);
+}
