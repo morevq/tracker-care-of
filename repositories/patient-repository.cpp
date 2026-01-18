@@ -83,8 +83,6 @@ void PatientRepository::createPatient(const std::string& user_uuid, const std::s
 
 	if (PQresultStatus(res) != PGRES_TUPLES_OK) {
 		std::cerr << "Error inserting patient: " << PQerrorMessage(connection) << std::endl;
-		PQclear(res);
-		return;
 	}
 
 	PQclear(res);
