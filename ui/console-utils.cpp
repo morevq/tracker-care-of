@@ -46,6 +46,7 @@ InputAction getInput() {
 
     if (ch == 'w' || ch == 'W') return InputAction::Up;
     if (ch == 's' || ch == 'S') return InputAction::Down;
+	if (ch == '+') return InputAction::Add;
     if (ch == 13) return InputAction::Enter;
     if (ch == 27) return InputAction::Escape;
 
