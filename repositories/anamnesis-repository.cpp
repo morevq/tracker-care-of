@@ -41,10 +41,10 @@ std::vector<Anamnesis> AnamnesisRepository::getByPatientId(int id_patient) {
 
 		Anamnesis anamnesis;
 
-		anamnesis.id_patient = std::stoi(PQgetvalue(res, i, col_id));
+		anamnesis.id = std::stoi(PQgetvalue(res, i, col_id));
+		anamnesis.id_patient = id_patient;
 		anamnesis.description = PQgetvalue(res, i, col_description);
 		anamnesis.date = PQgetvalue(res, i, col_date);
-		anamnesis.photo_url = PQgetvalue(res, i, col_photo_url);
 
 		char* photo_url_cstr = PQgetvalue(res, i, col_photo_url);
 		if (photo_url_cstr && photo_url_cstr[0] != '\0') {
@@ -58,4 +58,62 @@ std::vector<Anamnesis> AnamnesisRepository::getByPatientId(int id_patient) {
 	}
 	PQclear(res);
 	return patients;
+}
+
+void AnamnesisRepository::createAnamnesis(int id_patient, std::string description, std::optional<std::string> photo_url) {
+	std::string id_str = std::to_string(id_patient);
+	const char* params[3] = { id_str.c_str(), description.c_str() };
+	if (!photo_url.has_value()) {
+		params[2] = nullptr;
+	}
+	else {
+		params[2] = photo_url->c_str();
+	}
+
+	const char* query =
+		"INSERT INTO anamnesis (id_patient, description, photo_url) VALUES ($1, $2, $3);";
+
+	PGresult* res = PQexecParams(
+		connection,
+		query,
+		3,
+		nullptr,
+		params,
+		nullptr,
+		nullptr,
+		0
+	);
+
+	if (PQresultStatus(res) != PGRES_COMMAND_OK) {
+		std::cerr << "Error inserting anamnesis: " << PQerrorMessage(connection) << std::endl;
+	}
+
+	PQclear(res);
+}
+
+void AnamnesisRepository::deleteAnamnesis(int id_anamnesis) {
+	const char* query = 
+		"DELETE FROM anamnesis WHERE id_anamnesis = $1;";
+
+	std::string id_str = std::to_string(id_anamnesis);
+	const char* params[] = {
+		id_str.c_str()
+	};
+
+	PGresult* res = PQexecParams(
+		connection,
+		query,
+		1,
+		nullptr,
+		params,
+		nullptr,
+		nullptr,
+		0
+	);
+
+	if (PQresultStatus(res) != PGRES_COMMAND_OK) {
+		std::cerr << "Error deleting anamnesis: " << PQerrorMessage(connection) << std::endl;
+	}
+
+	PQclear(res);
 }

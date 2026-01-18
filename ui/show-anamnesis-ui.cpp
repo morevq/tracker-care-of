@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "../repositories/anamnesis-repository.h"
+#include "add-anamnesis-ui.h"
 #include "console-utils.h"
 
 void showAnamnesisUI(
@@ -13,39 +14,45 @@ void showAnamnesisUI(
     PGconn* conn,
     const std::string& patientName
 ) {
-    AnamnesisRepository repo(conn);
-    auto data = repo.getByPatientId(patientId);
-
-    std::vector<AnamnesisTableRow> rows;
-    rows.reserve(data.size());
-
-    for (const auto& a : data) {
-        rows.push_back(AnamnesisTableRow{
-            a.id,
-            a.date,
-            a.description,
-        });
-    }
-
     int selected = 0;
 
-    size_t widthDate = 10;
-    size_t widthDesc = 11;
-
-    for (const auto& r : rows) {
-        widthDate = std::max(widthDate, utf8_len(r.date));
-        widthDesc = std::max(widthDesc, utf8_len(r.description));
-    }
-
-    const size_t gap = 2;
-
-    auto pad = [&](const std::string& s, size_t w) {
-        const size_t visible = utf8_len(s);
-        const size_t spaces = (w > visible ? w - visible : 0);
-        return s + std::string(spaces + gap, ' ');
-    };
-
     while (true) {
+        AnamnesisRepository repo(conn);
+        auto data = repo.getByPatientId(patientId);
+
+        std::vector<AnamnesisTableRow> rows;
+        rows.reserve(data.size());
+
+        for (const auto& a : data) {
+            rows.push_back(AnamnesisTableRow{
+                a.id,
+                a.date,
+                a.description,
+            });
+        }
+
+        if (!rows.empty()) {
+            selected = std::clamp(selected, 0, static_cast<int>(rows.size()) - 1);
+        } else {
+            selected = 0;
+        }
+
+        size_t widthDate = 10;
+        size_t widthDesc = 11;
+
+        for (const auto& r : rows) {
+            widthDate = std::max(widthDate, utf8_len(r.date));
+            widthDesc = std::max(widthDesc, utf8_len(r.description));
+        }
+
+        const size_t gap = 2;
+
+        auto pad = [&](const std::string& s, size_t w) {
+            const size_t visible = utf8_len(s);
+            const size_t spaces = (w > visible ? w - visible : 0);
+            return s + std::string(spaces + gap, ' ');
+        };
+
         system("cls");
 
         std::cout << "Anamnesis for: ";
@@ -54,7 +61,7 @@ void showAnamnesisUI(
         resetColor();
         std::cout << "\n\n";
 
-        std::cout << "Use arrows / W S to navigate, Esc to go back\n\n";
+        std::cout << "Use arrows / W S to navigate, + to add, Esc to go back\n\n";
 
         std::cout << std::left
                   << std::setw(static_cast<int>(widthDate + gap)) << "Date"
@@ -105,6 +112,10 @@ void showAnamnesisUI(
                 if (!rows.empty()) {
                     selected = (selected + 1) % static_cast<int>(rows.size());
                 }
+                break;
+
+            case InputAction::Add:
+                addAnamnesisUI(patientId, conn);
                 break;
 
             case InputAction::Escape:

@@ -41,7 +41,7 @@ std::vector<Patient> PatientRepository::getByUserUUID(const std::string& user_uu
 		Patient patient;
 
 		patient.id_patient = std::stoi(PQgetvalue(res, i, col_id));
-		patient.id_user = PQgetvalue(res, i, col_user);
+		patient.user_uuid = PQgetvalue(res, i, col_user);
 		patient.name = PQgetvalue(res, i, col_name);
 		patient.birth_date = PQgetvalue(res, i, col_birth_date);
 		
@@ -56,4 +56,56 @@ std::vector<Patient> PatientRepository::getByUserUUID(const std::string& user_uu
 	}
 	PQclear(res);
 	return patients;
+}
+
+void PatientRepository::createPatient(const std::string& user_uuid, const std::string& name, std::optional<std::string> birth_date) {
+	const char* params[3] = { user_uuid.c_str(), name.c_str(), nullptr };
+	if (birth_date.has_value()) {
+		params[2] = birth_date->c_str();
+	}
+
+	const char* query =
+		"INSERT INTO patient (user_uuid, name, birth_date) VALUES ($1, $2, $3);";
+
+	PGresult* res = PQexecParams(
+		connection,
+		query,
+		3,
+		nullptr,
+		params,
+		nullptr,
+		nullptr,
+		0
+	);
+
+	if (PQresultStatus(res) != PGRES_COMMAND_OK) {
+		std::cerr << "Error inserting patient: " << PQerrorMessage(connection) << std::endl;
+	}
+
+	PQclear(res);
+}
+
+void PatientRepository::deletePatient(int id_patient) {
+	std::string id_str = std::to_string(id_patient);
+	const char* params[] = { id_str.c_str() };
+
+	const char* query =
+		"DELETE FROM patient WHERE id_patient = $1;";
+
+	PGresult* res = PQexecParams(
+		connection,
+		query,
+		1,
+		nullptr,
+		params,
+		nullptr,
+		nullptr,
+		0
+	);
+
+	if (PQresultStatus(res) != PGRES_COMMAND_OK) {
+		std::cerr << "Error deleting patient: " << PQerrorMessage(connection) << std::endl;
+	}
+
+	PQclear(res);
 }
