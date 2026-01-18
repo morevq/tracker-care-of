@@ -15,4 +15,5 @@ public:
 
 	std::vector<Anamnesis> getByPatientId(int id_patient);
 	void createAnamnesis(int id_patient, std::string description, std::optional<std::string> photo_url);
+	void deleteAnamnesis(int id_anamnesis);
 };

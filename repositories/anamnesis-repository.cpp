@@ -90,3 +90,30 @@ void AnamnesisRepository::createAnamnesis(int id_patient, std::string descriptio
 
 	PQclear(res);
 }
+
+void AnamnesisRepository::deleteAnamnesis(int id_anamnesis) {
+	const char* query =
+		"DELETE FROM anamnesis WHERE id_anamnesis = $1;";
+
+	std::string id_str = std::to_string(id_anamnesis);
+	const char* params[] = {
+		id_str.c_str()
+	};
+
+	PGresult* res = PQexecParams(
+		connection,
+		query,
+		1,
+		nullptr,
+		params,
+		nullptr,
+		nullptr,
+		0
+	);
+
+	if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+		std::cerr << "Error deleting anamnesis: " << PQerrorMessage(connection) << std::endl;
+	}
+
+	PQclear(res);
+}
