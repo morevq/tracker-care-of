@@ -41,10 +41,10 @@ std::vector<Anamnesis> AnamnesisRepository::getByPatientId(int id_patient) {
 
 		Anamnesis anamnesis;
 
-		anamnesis.id_patient = std::stoi(PQgetvalue(res, i, col_id));
+		anamnesis.id = std::stoi(PQgetvalue(res, i, col_id));
+		anamnesis.id_patient = id_patient;
 		anamnesis.description = PQgetvalue(res, i, col_description);
 		anamnesis.date = PQgetvalue(res, i, col_date);
-		anamnesis.photo_url = PQgetvalue(res, i, col_photo_url);
 
 		char* photo_url_cstr = PQgetvalue(res, i, col_photo_url);
 		if (photo_url_cstr && photo_url_cstr[0] != '\0') {
@@ -71,12 +71,12 @@ void AnamnesisRepository::createAnamnesis(int id_patient, std::string descriptio
 	}
 
 	const char* query =
-		"INSERT INTO anamnesis (id_patient, description, photo_url) VALUES ($1, $2, $3)";
+		"INSERT INTO anamnesis (id_patient, description, photo_url) VALUES ($1, $2, $3);";
 
 	PGresult* res = PQexecParams(
 		connection,
 		query,
-		2,
+		3,
 		nullptr,
 		params,
 		nullptr,
@@ -84,7 +84,7 @@ void AnamnesisRepository::createAnamnesis(int id_patient, std::string descriptio
 		0
 	);
 
-	if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+	if (PQresultStatus(res) != PGRES_COMMAND_OK) {
 		std::cerr << "Error inserting anamnesis: " << PQerrorMessage(connection) << std::endl;
 	}
 
@@ -111,7 +111,7 @@ void AnamnesisRepository::deleteAnamnesis(int id_anamnesis) {
 		0
 	);
 
-	if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+	if (PQresultStatus(res) != PGRES_COMMAND_OK) {
 		std::cerr << "Error deleting anamnesis: " << PQerrorMessage(connection) << std::endl;
 	}
 
