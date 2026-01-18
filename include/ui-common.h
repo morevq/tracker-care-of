@@ -20,8 +20,10 @@ enum class ConsoleColor {
 };
 
 enum class InputAction {
+    None = 0,
     Up,
     Down,
     Enter,
-    Escape
+    Escape,
+    Add
 };
