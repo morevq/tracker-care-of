@@ -87,3 +87,28 @@ void PatientRepository::createPatient(const std::string& user_uuid, const std::s
 
 	PQclear(res);
 }
+
+void PatientRepository::deletePatient(int id_patient) {
+	std::string id_str = std::to_string(id_patient);
+	const char* params[] = { id_str.c_str() };
+
+	const char* query = 
+		"DELETE FROM patient WHERE id_patient = $1";
+
+	PGresult* res = PQexecParams(
+		connection,
+		query,
+		1,
+		nullptr,
+		params,
+		nullptr,
+		nullptr,
+		0
+	);
+
+	if (PQresultStatus(res) != PGRES_TUPLES_OK) {
+		std::cerr << "Error deleting patient: " << PQerrorMessage(connection) << std::endl;
+	}
+
+	PQclear(res);
+}
