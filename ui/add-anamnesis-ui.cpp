@@ -16,8 +16,6 @@ bool addAnamnesisUI(int patient_id, PGconn* connection) {
     std::cout << "Add anamnesis\n";
     std::cout << "Description (empty = cancel): ";
 
-    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-
     std::string description;
     std::getline(std::cin, description);
 
