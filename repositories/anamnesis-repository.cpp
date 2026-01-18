@@ -61,7 +61,8 @@ std::vector<Anamnesis> AnamnesisRepository::getByPatientId(int id_patient) {
 }
 
 void AnamnesisRepository::createAnamnesis(int id_patient, std::string description, std::optional<std::string> photo_url) {
-	const char* params[3] = { std::to_string(id_patient).c_str(), description.c_str() };
+	std::string id_str = std::to_string(id_patient);
+	const char* params[3] = { id_str.c_str(), description.c_str() };
 	if (!photo_url.has_value()) {
 		params[2] = nullptr;
 	}
@@ -85,8 +86,6 @@ void AnamnesisRepository::createAnamnesis(int id_patient, std::string descriptio
 
 	if (PQresultStatus(res) != PGRES_TUPLES_OK) {
 		std::cerr << "Error inserting anamnesis: " << PQerrorMessage(connection) << std::endl;
-		PQclear(res);
-		return;
 	}
 
 	PQclear(res);
