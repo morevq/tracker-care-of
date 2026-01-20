@@ -78,7 +78,7 @@ int main() {
         std::cout << "Email: ";
         std::cin >> email;
         std::cout << "Password: ";
-        std::cin >> password;
+		password = readPassword();
 
         std::optional<std::string> my_user_uuid;
         if (mode == 1) {
@@ -126,21 +126,7 @@ int main() {
             }
 
             if (selectedId == -1) {
-#ifdef _WIN32
-                system("cls");
-#else
-                system("clear");
-#endif
-                std::cout << "Esc - Exit, + - Add patient\n";
-                const InputAction a = getInput();
-                if (a == InputAction::Escape) break;
-                if (a == InputAction::Add) {
-                    if (addPatientUI(my_user_uuid_str, conn)) {
-                        tablePatients = loadPatientsTable(conn, my_user_uuid_str);
-                        selectedIndex = 0;
-                    }
-                }
-                continue;
+				break;
             }
 
             auto it = std::find_if(
