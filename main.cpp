@@ -78,7 +78,7 @@ int main() {
         std::cout << "Email: ";
         std::cin >> email;
         std::cout << "Password: ";
-        std::cin >> password;
+		password = readPassword();
 
         std::optional<std::string> my_user_uuid;
         if (mode == 1) {

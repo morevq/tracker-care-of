@@ -1,6 +1,7 @@
 #include "console-utils.h"
 
 #include <conio.h>
+#include <iostream>
 
 #ifdef _WIN32
 #include <windows.h>
@@ -60,4 +61,82 @@ size_t utf8_len(const std::string& s) {
         if ((c & 0xC0) != 0x80) ++count;
     }
     return count;
+}
+
+std::string readPassword() {
+	std::string password;
+
+#ifdef _WIN32
+    while(true){
+		const int ch = _getch();
+
+        if (ch == 13) { // Enter
+			std::cout << std::endl;
+            break;
+        }
+
+        if (ch == 8) { // Backspace
+            if (!password.empty()) {
+                password.pop_back();
+                std::cout << "\b \b"; // удаление символа из консоли
+            }
+            continue;
+		}
+
+		if (ch == 0 || ch == 224) { // служебные клавиши (стрелки и т.п.)
+            _getch();
+            continue;
+        }
+
+        if (ch == 27) { // Esc
+            password.clear();
+            std::cout << std::endl;
+            break;
+		}
+
+        password += static_cast<char>(ch);
+		std::cout << '*'; // отображение символа-звездочки
+    }
+#else
+    termios oldt{};
+    tcgetattr(STDIN_FILENO, &oldt);
+
+    termios newt = oldt;
+    newt.c_lflag &= static_cast<unsigned>(~ECHO);
+    tcsetattr(STDIN_FILENO, TCSANOW, &newt);
+
+    while (true) {
+        char ch = '\0';
+        const ssize_t n = ::read(STDIN_FILENO, &ch, 1);
+        if (n <= 0) break;
+
+        if (ch == '\n' || ch == '\r') {
+            std::cout << '\n';
+            break;
+        }
+
+        if (ch == 127 || ch == '\b') { // backspace
+            if (!password.empty()) {
+                password.pop_back();
+                std::cout << "\b \b";
+                std::cout.flush();
+            }
+            continue;
+        }
+
+        if (ch == 27) { // Esc
+            std::cout << '\n';
+            password.clear();
+            break;
+        }
+
+        password.push_back(ch);
+        std::cout << '*';
+        std::cout.flush();
+    }
+
+    tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+#endif
+
+    return password;
 }

@@ -10,3 +10,4 @@ void resetColor();
 
 InputAction getInput();
 size_t utf8_len(const std::string& s);
+std::string readPassword();
