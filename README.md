@@ -197,7 +197,3 @@ tracker_cli --> tracker_db --> tracker_core --> tracker_common
 ## Лицензия
 
 Проект распространяется по лицензии **Creative Commons Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)**. Подробности см. в файле `LICENSE`.
-
-## Авторы
-
-(Добавьте информацию об авторах)
