@@ -1,5 +1,4 @@
 cmake_minimum_required(VERSION 3.25)
-project(tracker-care-of LANGUAGES C CXX)
 
 if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     if(DEFINED ENV{VCPKG_ROOT})
@@ -9,6 +8,8 @@ if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
     endif()
 endif()
 
+project(tracker_care_of LANGUAGES C CXX)
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -16,30 +17,98 @@ find_package(fmt CONFIG REQUIRED)
 find_package(PostgreSQL REQUIRED)
 find_package(unofficial-argon2 CONFIG REQUIRED)
 
-add_executable(main
-    main.cpp
-    db/postgre-db.cpp
-    include/crypto/password-hasher.cpp
-    include/env/env-parser.cpp
-    models/patient.cpp
-    repositories/anamnesis-repository.cpp
-    repositories/patient-repository.cpp
-    repositories/user-repository.cpp
-    repositories/water-repository.cpp
-    services/auth-service.cpp
-    ui/add-anamnesis-ui.cpp
-    ui/add-patient-ui.cpp
-    ui/console-utils.cpp
-    ui/show-anamnesis-ui.cpp)
 
-target_link_libraries(main
-    PRIVATE fmt::fmt
-    PostgreSQL::PostgreSQL
-    unofficial::argon2::libargon2
+add_library(tracker_common STATIC
+    libs/common/src/env-parser.cpp
+)
+target_include_directories(tracker_common
+    PUBLIC
+        ${CMAKE_SOURCE_DIR}/libs/common/include
 )
 
-set_target_properties(main PROPERTIES
+add_library(tracker_crypto STATIC
+    libs/crypto/src/password-hasher.cpp
+)
+target_include_directories(tracker_crypto
+    PUBLIC
+        ${CMAKE_SOURCE_DIR}/libs/crypto/include
+)
+target_link_libraries(tracker_crypto
+    PUBLIC 
+        unofficial::argon2::libargon2
+        tracker_common
+)
+
+add_library(tracker_core STATIC
+    libs/core/src/models/patient.cpp
+)
+target_include_directories(tracker_core
+    PUBLIC
+        ${CMAKE_SOURCE_DIR}/libs/core/include
+)
+target_link_libraries(tracker_core
+    PUBLIC
+        tracker_common
+        fmt::fmt
+)
+
+add_library(tracker_db STATIC
+    libs/db/src/postgres-db.cpp
+    libs/db/src/repositories/anamnesis-repository.cpp
+    libs/db/src/repositories/patient-repository.cpp
+    libs/db/src/repositories/user-repository.cpp
+    libs/db/src/repositories/water-repository.cpp
+    libs/core/src/usecases/auth-service.cpp
+)
+target_include_directories(tracker_db
+    PUBLIC
+        ${CMAKE_SOURCE_DIR}/libs/db/include
+)
+target_link_libraries(tracker_db
+    PUBLIC
+        tracker_core
+        tracker_crypto
+        PostgreSQL::PostgreSQL
+)
+
+
+add_executable(tracker_cli
+    apps/cli/src/main.cpp
+    apps/cli/src/add-anamnesis-ui.cpp
+    apps/cli/src/add-patient-ui.cpp
+    apps/cli/src/console-utils.cpp
+    apps/cli/src/show-anamnesis-ui.cpp
+)
+target_include_directories(tracker_cli
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/apps/cli/include
+)
+target_link_libraries(tracker_cli
+    PRIVATE
+        tracker_db
+        fmt::fmt
+)
+
+
+add_executable(tracker_api
+    apps/api/src/main.cpp
+)
+target_include_directories(tracker_api
+    PRIVATE
+        ${CMAKE_SOURCE_DIR}/apps/api/include
+)
+target_link_libraries(tracker_api
+    PRIVATE
+        tracker_db
+        fmt::fmt
+)
+
+set_target_properties(tracker_cli PROPERTIES
+    VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+)
+set_target_properties(tracker_api PROPERTIES
     VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
 )
 
-target_include_directories(main PRIVATE ${CMAKE_SOURCE_DIR}/include)
+# Set tracker_api as the default startup project
+set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT tracker_api)
