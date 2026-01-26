@@ -93,7 +93,7 @@ target_link_libraries(tracker_cli
 add_executable(tracker_api
     apps/api/src/main.cpp
     apps/api/src/controllers/anamnesis-controller.cpp
-    apps/api/src/controllers/auth-controller
+    apps/api/src/controllers/auth-controller.cpp
     apps/api/src/controllers/patient-controller.cpp
     apps/api/src/controllers/water-controller.cpp
 )
