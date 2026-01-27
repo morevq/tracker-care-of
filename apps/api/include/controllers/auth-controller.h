@@ -11,14 +11,13 @@ namespace tracker_api {
     private:
         tracker::AuthService& authService;
 
+        crow::response registerUser(const crow::request& req);
+        crow::response loginUser(const crow::request& req);
+
     public:
         AuthController(tracker::AuthService& authService);
 
         void registerRoutes(crow::SimpleApp& app);
-
-    private:
-        crow::response registerUser(const crow::request& req);
-        crow::response loginUser(const crow::request& req);
     };
 
 }
