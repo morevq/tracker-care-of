@@ -1,17 +1,24 @@
 #pragma once
-#include <string>
-#include <optional>
-#include <nlohmann/json.hpp>
+
+#include <crow.h>
+#include <tracker/usecases/auth-service.h>
+
+#include "../dto/auth-dto.h"
 
 namespace tracker_api {
 
-	struct AnamnesisResponse {
-		int id;
-		std::string description;
-		std::optional<std::string> photo_url;
-		std::string created_at;
-	};
+    class AuthController {
+    private:
+        tracker::AuthService& authService;
 
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(AnamnesisResponse, id, description, photo_url, created_at)
+    public:
+        AuthController(tracker::AuthService& authService);
 
-};
+        void registerRoutes(crow::SimpleApp& app);
+
+    private:
+        crow::response registerUser(const crow::request& req);
+        crow::response loginUser(const crow::request& req);
+    };
+
+}
