@@ -4,6 +4,7 @@
 #include <nlohmann/json.hpp>
 
 namespace tracker_api {
+
 	struct CreatePatientRequest {
 		std::string userUuid;
 		std::string name;
@@ -19,4 +20,5 @@ namespace tracker_api {
 
 	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(CreatePatientRequest, userUuid, name, birth_date)
 	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(PatientResponse, id, name, birth_date, created_at)
+
 };
