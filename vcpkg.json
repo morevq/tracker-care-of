@@ -4,6 +4,7 @@
     "fmt",
     "argon2",
     "libpq",
-    "crow"
+    "crow",
+    "nlohmann-json"
   ]
 }

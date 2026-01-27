@@ -16,6 +16,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(fmt CONFIG REQUIRED)
 find_package(PostgreSQL REQUIRED)
 find_package(unofficial-argon2 CONFIG REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
 
 
 add_library(tracker_common STATIC
@@ -105,6 +106,7 @@ target_link_libraries(tracker_api
     PRIVATE
         tracker_db
         fmt::fmt
+        nlohmann_json::nlohmann_json
 )
 
 set_target_properties(tracker_cli PROPERTIES
