@@ -3,7 +3,7 @@
 
 using json = nlohmann::json;
 
-using tracker_api{
+using tracker_api {
 
 	 AuthController::AuthController(AuthService & authService) : authService(authService) {}
 

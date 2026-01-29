@@ -9,13 +9,13 @@ namespace tracker_api {
 
     class AuthController {
     private:
-        tracker::AuthService& authService;
+        AuthService& authService;
 
         crow::response registerUser(const crow::request& req);
         crow::response loginUser(const crow::request& req);
 
     public:
-        AuthController(tracker::AuthService& authService);
+        AuthController(AuthService& authService);
 
         void registerRoutes(crow::SimpleApp& app);
     };
