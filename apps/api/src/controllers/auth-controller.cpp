@@ -3,7 +3,7 @@
 
 using json = nlohmann::json;
 
-using tracker_api {
+namespace tracker_api {
 
 	 AuthController::AuthController(AuthService & authService) : authService(authService) {}
 
@@ -17,7 +17,7 @@ using tracker_api {
 		CROW_ROUTE(app, "/api/auth/login")
 			.methods(crow::HTTPMethod::POST)
 			([this, &app](const crow::request& req) {
-			return this->loginUser(app);
+			return this->loginUser(req);
 		});
 
 		CROW_ROUTE(app, "/api/auth/logout")
@@ -25,7 +25,7 @@ using tracker_api {
 			([this](const crow::request& req) {
 			crow::response res(200);
 			res.add_header("Set-Cookie", "session_uuid=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict");
-			res.write(json(AuthResponse{ "Logged out successfully" }).dump());
+			res.write(json(AuthResponse{ "", "Logged out successfully" }).dump());
 			res.add_header("Content-Type", "application/json");
 			return res;
 		});
@@ -33,10 +33,10 @@ using tracker_api {
 
 	crow::response AuthController::registerUser(const crow::request & req) {
 		try {
-			auto requestData = json::parse(req.body);
-			RegisterRequest registerRequest = requestData.get<RegisterRequest>();
+		auto requestData = json::parse(req.body);
+		RegisterRequest registerRequest = requestData.get<RegisterRequest>();
 
-			auto userUuid = authService.registerUser(registerRequest);
+		auto userUuid = authService.registerUser(registerRequest.email, registerRequest.password);
 
 			if (!userUuid) {
 				return crow::response(400, "User already exists or registration failed");
@@ -59,11 +59,11 @@ using tracker_api {
 			auto requestData = json::parse(req.body);
 			LoginRequest loginRequest = requestData.get<LoginRequest>();
 
-			auto userUuid = authService.loginUser(loginRequest.email, loginRequest.password);
+		auto userUuid = authService.loginUser(loginRequest.email, loginRequest.password);
 
-			if (!authResult) {
-				return crow::response(401, "Invalid credentials");
-			}
+		if (!userUuid) {
+			return crow::response(401, "Invalid credentials");
+		}
 
 			crow::response res(200);
 			res.add_header("Set-Cookie", "session_uuid=" + *userUuid + 

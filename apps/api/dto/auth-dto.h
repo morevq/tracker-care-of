@@ -4,17 +4,18 @@
 
 namespace tracker_api {
 
-	struct RegisterUserRequest {
+	struct RegisterRequest {
 		std::string email;
 		std::string password;
 	};
 
-	struct LeginUserRequest {
+	struct LoginRequest {
 		std::string email;
 		std::string password;
 	};
 
 	struct AuthResponse {
+		std::string user_uuid;
 		std::string message;
 	};
 
