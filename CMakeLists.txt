@@ -97,6 +97,7 @@ add_executable(tracker_api
     apps/api/src/controllers/auth-controller.cpp
     apps/api/src/controllers/patient-controller.cpp
     apps/api/src/controllers/water-controller.cpp
+    apps/api/src/middleware/auth-middleware.cpp
 )
 target_include_directories(tracker_api
     PRIVATE
