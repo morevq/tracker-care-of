@@ -92,7 +92,7 @@ inline int interactiveTable(const std::vector<PatientTableRow>& rows, int& selec
     };
 
     while (true) {
-        system("cls");
+        clearScreen();
 
         std::cout << "Use arrow keys or W/S to navigate, Enter to select, + to add patient, Esc to exit\n\n";
 

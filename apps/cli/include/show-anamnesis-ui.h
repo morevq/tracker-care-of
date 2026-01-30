@@ -1,7 +1,7 @@
 #pragma once
 
-#include <libpq-fe.h>
 #include <string>
+#include "api-client.h"
 
 struct AnamnesisTableRow {
     int id;
@@ -11,6 +11,6 @@ struct AnamnesisTableRow {
 
 void showAnamnesisUI(
     int patientId,
-    PGconn* conn,
+    ApiClient& apiClient,
     const std::string& patientName
 );
