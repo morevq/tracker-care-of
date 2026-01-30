@@ -16,6 +16,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(fmt CONFIG REQUIRED)
 find_package(PostgreSQL REQUIRED)
 find_package(unofficial-argon2 CONFIG REQUIRED)
+find_package(nlohmann_json CONFIG REQUIRED)
+find_package(cpr CONFIG REQUIRED)
 
 
 add_library(tracker_common STATIC
@@ -74,10 +76,14 @@ target_link_libraries(tracker_db
 
 add_executable(tracker_cli
     apps/cli/src/main.cpp
+    apps/cli/src/api-client.cpp
     apps/cli/src/add-anamnesis-ui.cpp
     apps/cli/src/add-patient-ui.cpp
     apps/cli/src/console-utils.cpp
     apps/cli/src/show-anamnesis-ui.cpp
+    apps/cli/src/date-utils.cpp
+    apps/cli/src/patient-table-loader.cpp
+    apps/cli/src/auth-handler.cpp
 )
 target_include_directories(tracker_cli
     PRIVATE
@@ -85,13 +91,21 @@ target_include_directories(tracker_cli
 )
 target_link_libraries(tracker_cli
     PRIVATE
-        tracker_db
+        tracker_common
+        tracker_core
+        cpr::cpr
+        nlohmann_json::nlohmann_json
         fmt::fmt
 )
 
 
 add_executable(tracker_api
     apps/api/src/main.cpp
+    apps/api/src/controllers/anamnesis-controller.cpp
+    apps/api/src/controllers/auth-controller.cpp
+    apps/api/src/controllers/patient-controller.cpp
+    apps/api/src/controllers/water-controller.cpp
+    apps/api/src/middleware/auth-middleware.cpp
 )
 target_include_directories(tracker_api
     PRIVATE
@@ -101,6 +115,7 @@ target_link_libraries(tracker_api
     PRIVATE
         tracker_db
         fmt::fmt
+        nlohmann_json::nlohmann_json
 )
 
 set_target_properties(tracker_cli PROPERTIES

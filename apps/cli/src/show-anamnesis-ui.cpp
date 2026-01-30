@@ -5,29 +5,27 @@
 #include <iostream>
 #include <vector>
 
-#include "tracker_db/repositories/anamnesis-repository.h"
 #include "add-anamnesis-ui.h"
 #include "console-utils.h"
 
 void showAnamnesisUI(
     int patientId,
-    PGconn* conn,
+    ApiClient& apiClient,
     const std::string& patientName
 ) {
     int selected = 0;
 
     while (true) {
-        AnamnesisRepository repo(conn);
-        auto data = repo.getByPatientId(patientId);
+        auto data = apiClient.getAnamnesisByPatient(patientId);
 
         std::vector<AnamnesisTableRow> rows;
         rows.reserve(data.size());
 
-        for (const auto& a : data) {
+        for (const auto& anamnesis : data) {
             rows.push_back(AnamnesisTableRow{
-                a.id,
-                a.date,
-                a.description,
+                anamnesis.id,
+                anamnesis.date,
+                anamnesis.description,
             });
         }
 
@@ -53,7 +51,7 @@ void showAnamnesisUI(
             return s + std::string(spaces + gap, ' ');
         };
 
-        system("cls");
+        clearScreen();
 
         std::cout << "Anamnesis for: ";
         setColor(ConsoleColor::LightCyan, ConsoleColor::Black);
@@ -99,30 +97,27 @@ void showAnamnesisUI(
             }
         }
 
-        const InputAction action = getInput();
+        std::cout << '\n';
 
-        switch (action) {
-            case InputAction::Up:
-                if (!rows.empty()) {
-                    selected = (selected + static_cast<int>(rows.size()) - 1) % static_cast<int>(rows.size());
-                }
-                break;
+        InputAction action = getInput();
 
-            case InputAction::Down:
-                if (!rows.empty()) {
-                    selected = (selected + 1) % static_cast<int>(rows.size());
-                }
-                break;
+        if (action == InputAction::Escape) {
+            break;
+        }
 
-            case InputAction::Add:
-                addAnamnesisUI(patientId, conn);
-                break;
+        if (action == InputAction::Add) {
+            if (addAnamnesisUI(patientId, apiClient)) {
+                selected = 0;
+            }
+            continue;
+        }
 
-            case InputAction::Escape:
-                return;
+        if (action == InputAction::Up && selected > 0) {
+            selected--;
+        }
 
-            default:
-                break;
+        if (action == InputAction::Down && selected < static_cast<int>(rows.size()) - 1) {
+            selected++;
         }
     }
 }

@@ -3,6 +3,9 @@
   "dependencies": [
     "fmt",
     "argon2",
-    "libpq"
+    "libpq",
+    "crow",
+    "nlohmann-json",
+    "cpr"
   ]
 }

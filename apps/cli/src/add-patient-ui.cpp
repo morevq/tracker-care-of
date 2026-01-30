@@ -4,13 +4,11 @@
 #include <limits>
 #include <optional>
 
-#include "tracker_db/repositories/patient-repository.h"
-
 #ifdef _WIN32
 #include "console-utf8.h"
 #endif
 
-bool addPatientUI(const std::string& user_uuid, PGconn* connection) {
+bool addPatientUI(ApiClient& apiClient) {
 #ifdef _WIN32
     initWinConsoleUnicode();
     system("cls");
@@ -45,8 +43,5 @@ bool addPatientUI(const std::string& user_uuid, PGconn* connection) {
         birthOpt = birth;
     }
 
-    PatientRepository repo(connection);
-    repo.createPatient(user_uuid, name, birthOpt);
-
-    return true;
+    return apiClient.createPatient(name, birthOpt);
 }
