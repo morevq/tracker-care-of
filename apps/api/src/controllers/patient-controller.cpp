@@ -1,4 +1,5 @@
 #include "controllers/patient-controller.h"
+#include "middleware/auth-middleware.h"
 #include <nlohmann/json.hpp>
 
 using json = nlohmann::json;
@@ -29,10 +30,15 @@ namespace tracker_api {
 
 	crow::response PatientController::createPatient(const crow::request& req) {
 		try {
-			auto requestData = json::parse(req.body);
-			CreatePatientRequest createRequest = requestData.get<CreatePatientRequest>();
+			auto userUuid = AuthMiddleware::getUserUuidFromCookie(req);
+			if (!userUuid) {
+				return crow::response(401, "Unauthorized");
+			}
 
-			patientRepo.createPatient(createRequest.userUuid, createRequest.name, createRequest.birth_date);
+			auto requestData = json::parse(req.body);
+			CreatePatientRequest createReq = requestData.get<CreatePatientRequest>();
+
+			patientRepo.createPatient(*userUuid, createReq.name, createReq.birth_date);
 			
 			return crow::response(201, "Patient created successfully");
 		}
@@ -43,20 +49,20 @@ namespace tracker_api {
 
 	crow::response PatientController::getPatients(const crow::request& req) {
 		try {
-			auto userUuid = req.url_params.get("user_uuid");
+			auto userUuid = AuthMiddleware::getUserUuidFromCookie(req);
 			if (!userUuid) {
-				return crow::response(400, "Missing user_uuid parameter");
+				return crow::response(400, "Unauthorized");
 			}
 
-			std::vector<Patient> patients = patientRepo.getByUserUUID(userUuid);
+			std::vector<Patient> patients = patientRepo.getByUserUUID(*userUuid);
 
 			std::vector<PatientResponse> response;
 			for (const Patient& patient: patients) {
 				response.push_back(PatientResponse{
 					patient.id_patient,
-					patient.user_uuid,
 					patient.name,
-					patient.birth_date
+					patient.birth_date,
+					patient.created_at
 				});
 			}
 
@@ -69,17 +75,26 @@ namespace tracker_api {
 
 	crow::response PatientController::getPatientById(const crow::request& req, int id) {
 		try {
+			auto userUuid = AuthMiddleware::getUserUuidFromCookie(req);
+			if (!userUuid) {
+				return crow::response(401, "Unauthorized");
+			}
+
 			auto patient = patientRepo.getByID(id);
 
 			if (!patient) {
 				return crow::response(404, "Patient not found");
 			}
 
+			if (patient->user_uuid != *userUuid) {
+				return crow::response(403, "Forbidden: Access denied");
+			}
+
 			PatientResponse response{
 				patient->id_patient,
-				patient->user_uuid,
 				patient->name,
-				patient->birth_date
+				patient->birth_date,
+				patient->created_at
 			};
 
 			return crow::response(200, json(response).dump());
