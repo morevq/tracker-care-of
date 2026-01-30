@@ -8,5 +8,5 @@ struct Anamnesis {
     int id_patient;
     std::string description;
     std::optional<std::string> photo_url;
-    std::string date;
+    std::string created_at;
 };
