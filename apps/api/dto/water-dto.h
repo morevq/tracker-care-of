@@ -4,13 +4,13 @@
 
 namespace tracker_api {
 
-	struct WaterIntakeResponse {
+	struct WaterResponse {
 		int id;
 		std::string lastWater;
 		int frequency;
 		std::string frequencyMeasure;
 	};
 	
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(WaterIntakeResponse, id, lastWater, frequency, frequencyMeasure)
+	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(WaterResponse, id, lastWater, frequency, frequencyMeasure)
 
-};
+}
