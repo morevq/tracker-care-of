@@ -44,7 +44,7 @@ std::vector<Anamnesis> AnamnesisRepository::getByPatientId(int id_patient) {
 		anamnesis.id = std::stoi(PQgetvalue(res, i, col_id));
 		anamnesis.id_patient = id_patient;
 		anamnesis.description = PQgetvalue(res, i, col_description);
-		anamnesis.date = PQgetvalue(res, i, col_date);
+		anamnesis.created_at = PQgetvalue(res, i, col_date);
 
 		char* photo_url_cstr = PQgetvalue(res, i, col_photo_url);
 		if (photo_url_cstr && photo_url_cstr[0] != '\0') {

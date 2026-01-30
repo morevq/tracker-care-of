@@ -12,6 +12,7 @@ namespace tracker_api {
         PatientRepository& patientRepo;
 
         crow::response getAnamnesisData(const crow::request& req, int patientId);
+        crow::response createAnamnesis(const crow::request& req);
 
     public:
         AnamnesisController(AnamnesisRepository& anamnesisRepo, PatientRepository& patientRepo);

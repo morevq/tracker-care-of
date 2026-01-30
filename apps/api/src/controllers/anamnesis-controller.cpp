@@ -15,6 +15,12 @@ namespace tracker_api {
             ([this](const crow::request& req, int patientId) {
                 return this->getAnamnesisData(req, patientId);
             });
+
+        CROW_ROUTE(app, "/api/anamnesis")
+            .methods(crow::HTTPMethod::POST)
+            ([this](const crow::request& req) {
+                return this->createAnamnesis(req);
+            });
     }
 
     crow::response AnamnesisController::getAnamnesisData(const crow::request& req, int patientId) {
@@ -41,7 +47,7 @@ namespace tracker_api {
                     anamnesis.id,
                     anamnesis.description,
                     anamnesis.photo_url,
-					anamnesis.created_at
+                    anamnesis.created_at
                 });
             }
 
@@ -49,6 +55,38 @@ namespace tracker_api {
         }
         catch (const std::exception& e) {
             return crow::response(500, "Internal server error: " + std::string(e.what()));
+        }
+    }
+
+    crow::response AnamnesisController::createAnamnesis(const crow::request& req) {
+        try {
+            auto userUuid = AuthMiddleware::getUserUuidFromCookie(req);
+            if (!userUuid) {
+                return crow::response(401, "Unauthorized");
+            }
+
+            auto requestData = json::parse(req.body);
+            int patientId = requestData["patient_id"];
+            std::string description = requestData["description"];
+            std::optional<std::string> photoUrl = requestData["photo_url"].is_null() 
+                ? std::nullopt 
+                : std::optional<std::string>(requestData["photo_url"]);
+
+            auto patient = patientRepo.getByID(patientId);
+            if (!patient) {
+                return crow::response(404, "Patient not found");
+            }
+
+            if (patient->user_uuid != *userUuid) {
+                return crow::response(403, "Forbidden: Access denied");
+            }
+
+            anamnesisRepo.createAnamnesis(patientId, description, photoUrl);
+
+            return crow::response(201, "Anamnesis created successfully");
+        }
+        catch (const std::exception& e) {
+            return crow::response(400, "Invalid request: " + std::string(e.what()));
         }
     }
 
