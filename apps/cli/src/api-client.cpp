@@ -188,15 +188,23 @@ std::vector<ApiClient::AnamnesisDto> ApiClient::getAnamnesisByPatient(int patien
         try {
             auto j = json::parse(r.text);
             for (const auto& item : j) {
+                    if (!item.contains("id") || !item.contains("description") || !item.contains("date")) {
+                    std::cerr << "Warning: Skipping anamnesis record with missing fields\n";
+                    continue;
+                }
+                
                 anamnesisRecords.push_back({
                     item["id"],
                     item["description"],
-                    item["photo_url"].is_null() ? std::nullopt : std::optional<std::string>(item["photo_url"]),
+                    item.contains("photo_url") && !item["photo_url"].is_null() 
+                        ? std::optional<std::string>(item["photo_url"]) 
+                        : std::nullopt,
                     item["date"]
                 });
             }
         } catch (const json::exception& e) {
             std::cerr << "JSON parsing error in getAnamnesisByPatient: " << e.what() << '\n';
+            std::cerr << "Response body: " << r.text << '\n';
         }
     }
     return anamnesisRecords;
@@ -209,11 +217,29 @@ bool ApiClient::createAnamnesis(int patientId, const std::string& description, c
         {"photo_url", photo_url.has_value() ? json(*photo_url) : json(nullptr)}
     };
 
+    std::cout << "Sending request to create anamnesis...\n";
+    std::cout << "Request body: " << body.dump() << '\n';
+
     cpr::Response r = cpr::Post(
         cpr::Url{baseUrl + "/api/anamnesis"},
         cpr::Header{{"Content-Type", "application/json"}, {"Cookie", sessionCookie}},
         cpr::Body{body.dump()}
     );
 
-    return r.status_code == 201;
+    std::cout << "Response status code: " << r.status_code << '\n';
+    std::cout << "Response body: " << r.text << '\n';
+
+    if (r.status_code == 0 || r.error) {
+        std::cerr << "Network error in createAnamnesis: " << r.error.message << '\n';
+        return false;
+    }
+
+    if (r.status_code != 201) {
+        std::cerr << "Failed to create anamnesis. Status code: " << r.status_code << '\n';
+        std::cerr << "Server response: " << r.text << '\n';
+        return false;
+    }
+
+    std::cout << "Anamnesis created successfully!\n";
+    return true;
 }
