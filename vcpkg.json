@@ -5,6 +5,7 @@
     "argon2",
     "libpq",
     "crow",
-    "nlohmann-json"
+    "nlohmann-json",
+    "cpr"
   ]
 }
