@@ -1,5 +1,5 @@
 #pragma once
 
-#include <libpq-fe.h>
+#include "api-client.h"
 
-bool addAnamnesisUI(int patient_id, PGconn* connection);
+bool addAnamnesisUI(int patient_id, ApiClient& apiClient);

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <libpq-fe.h>
 #include <string>
+#include "api-client.h"
 
-bool addPatientUI(const std::string& user_uuid, PGconn* connection);
+bool addPatientUI(ApiClient& apiClient);

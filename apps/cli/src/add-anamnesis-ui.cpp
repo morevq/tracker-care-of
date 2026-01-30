@@ -5,13 +5,11 @@
 #include <optional>
 #include <string>
 
-#include "tracker_db/repositories/anamnesis-repository.h"
-
 #ifdef _WIN32
 #include "console-utf8.h"
 #endif
 
-bool addAnamnesisUI(int patient_id, PGconn* connection) {
+bool addAnamnesisUI(int patient_id, ApiClient& apiClient) {
 #ifdef _WIN32 
     initWinConsoleUnicode();
     system("cls");
@@ -45,8 +43,5 @@ bool addAnamnesisUI(int patient_id, PGconn* connection) {
         photoOpt = photo_url;
     }
 
-    AnamnesisRepository repo(connection);
-    repo.createAnamnesis(patient_id, description, photoOpt);
-
-    return true;
+    return apiClient.createAnamnesis(patient_id, description, photoOpt);
 }
