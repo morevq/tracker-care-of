@@ -5,6 +5,7 @@
 x64/
 CMakeBuild/
 .vs/
+telegram-bot/.idea/
 build/
 
 # vcpkg
@@ -37,3 +38,28 @@ Makefile
 *.ipch
 *.tlog/
 *.lastbuildstate
+
+# Go specific
+# binaries for programs and plugins
+telegram-bot/cmd/bot/bot
+telegram-bot/cmd/bot/bot.exe
+telegram-bot/*.exe
+telegram-bot/*.dll
+telegram-bot/*.so
+telegram-bot/*.dylib
+
+# test binary, built with `go test -c`
+*.test
+
+# output of the go coverage tool
+*.out
+
+# Go workspace file
+go.work
+go.work.sum
+
+# dependency directories (remove the comment below to include it)
+vendor/
+
+# Go module download cache
+telegram-bot/vendor/
