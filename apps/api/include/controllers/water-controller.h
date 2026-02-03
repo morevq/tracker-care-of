@@ -10,6 +10,7 @@ namespace tracker_api {
 		WaterRepository& waterRepo;
 
 		crow::response getWaterData(const crow::request& req);
+		crow::response deleteWater(const crow::request& req, int id);
 
 	public:
 		WaterController(WaterRepository& waterRepo);
