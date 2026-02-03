@@ -18,6 +18,7 @@ find_package(PostgreSQL REQUIRED)
 find_package(unofficial-argon2 CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(cpr CONFIG REQUIRED)
+find_package(Crow CONFIG REQUIRED)
 
 
 add_library(tracker_common STATIC

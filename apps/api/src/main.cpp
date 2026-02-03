@@ -53,9 +53,35 @@ int main() {
         waterController.registerRoutes(app);
         anamnesisController.registerRoutes(app);
 
+        CROW_ROUTE(app, "/swagger.json")
+            ([]() {
+                std::ifstream file("apps/api/swagger.json");
+                if (!file.is_open()) {
+                    return crow::response(500, "Swagger spec not found");
+                }
+                std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
+                crow::response res(content);
+                res.add_header("Content-Type", "application/json");
+                return res;
+            });
+
+        CROW_ROUTE(app, "/swagger")
+            ([]() {
+            return R"(<!DOCTYPE html>
+                <html>
+                <head><link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css"/></head>
+                <body>
+                <div id="swagger-ui"></div>
+                <script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
+                <script>SwaggerUIBundle({url:'/swagger.json',dom_id:'#swagger-ui'});</script>
+                </body>
+                </html>)";
+            });
+
         int port = env.count("API_PORT") ? std::stoi(env["API_PORT"]) : 8080;
         
         std::cout << "Starting server on port " << port << "..." << std::endl;
+        std::cout << "Swagger UI: http://localhost:" << port << "/swagger" << std::endl;
         app.port(static_cast<std::uint16_t>(port)).multithreaded().run();
 
         PQfinish(conn);
