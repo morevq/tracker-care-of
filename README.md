@@ -70,6 +70,38 @@ cmake --build build
 .\start-apps.ps1
 ```
 
+Скрипт автоматически запускает:
+1. **API сервер** - доступен на `http://localhost:8080`
+   - Swagger UI: `http://localhost:8080/swagger`
+2. **CLI приложение** - интерактивный консольный интерфейс
+
+#### Ручной запуск
+
+**API сервер:**
+```powershell
+# Windows
+.\out\build\x64-Debug\apps\api\tracker_api.exe
+
+# Linux/macOS
+./build/apps/api/tracker_api
+```
+
+После запуска в консоли отобразится:
+```
+Connected to database successfully!
+Starting server on port 8080...
+Swagger UI: http://localhost:8080/swagger
+```
+
+**CLI приложение:**
+```powershell
+# Windows
+.\out\build\x64-Debug\apps\cli\tracker_cli.exe
+
+# Linux/macOS
+./build/apps/cli/tracker_cli
+```
+
 </br>
 
 ## Возможности
@@ -79,7 +111,7 @@ cmake --build build
 - Ведение анамнеза для каждого пациента
 - Отслеживание частоты полива (для растений)
 - Интерактивный консольный интерфейс (CLI)
-- API сервер
+- API сервер с Swagger UI документацией
 
 ## Технологии
 
@@ -87,9 +119,11 @@ cmake --build build
 - Система сборки: CMake (версия 3.25+)
 - База данных: PostgreSQL (libpq)
 - Хеширование паролей: Argon2 (unofficial-argon2)
+- HTTP сервер: Crow (микрофреймворк)
 - Форматирование: fmt
 - HTTP клиент: cpr
 - JSON: nlohmann/json
+- API документация: Swagger UI (OpenAPI 3.0)
 - Менеджер пакетов: vcpkg
 
 ## Структура проекта
@@ -99,7 +133,8 @@ tracker-care-of/
 ├── apps/                           # Приложения
 │   ├── api/                        # API сервер
 │   │   ├── src/
-│   │   └── dto/
+│   │   ├── dto/
+│   │   └── swagger.json           # OpenAPI спецификация
 │   └── cli/                        # Консольное приложение
 │       ├── include/                # Заголовочные файлы UI
 │       └── src/                    # Исходники UI
@@ -153,19 +188,29 @@ tracker-care-of/
 
 ## API
 
-CLI взаимодействует с сервером через HTTP (cookie-сессия). В проекте используются DTO на базе `nlohmann::json`.
+API сервер предоставляет RESTful интерфейс для управления пациентами и их данными.
 
 По умолчанию API сервер стартует на порту `API_PORT` из `.env` (если не задан — `8080`).
 
-CLI подключается к API по `API_URL` из `.env`.
+### Swagger UI
 
+После запуска API сервера доступна полная интерактивная документация:
 
-Типовые сценарии:
+**http://localhost:8080/swagger**
 
-- Авторизация: register / login / logout
-- Пациенты: список, получение по id, создание
-- Анамнез: список по пациенту, создание
-- Полив: получение данных по поливу
+Swagger UI позволяет:
+- Просматривать все доступные эндпоинты
+- Тестировать API напрямую из браузера
+- Просматривать схемы запросов и ответов
+- Проверять требования к авторизации
+
+JSON спецификация OpenAPI 3.0: `http://localhost:8080/swagger.json`
+
+### Аутентификация
+
+API использует **cookie-based аутентификацию** с HTTP-only cookies (`session_uuid`).
+
+CLI приложение автоматически управляет сессиями при взаимодействии с API через `API_URL` из `.env`.
 
 ### Зависимости между модулями
 
