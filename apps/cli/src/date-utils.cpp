@@ -6,7 +6,11 @@ std::string calculateAge(const std::optional<std::string>& birth_date) {
     if (!birth_date.has_value() || birth_date->empty()) return "-";
 
     int year, month, day;
+#ifdef _WIN32
+    if (sscanf_s(birth_date->c_str(), "%d-%d-%d", &year, &month, &day) != 3) return "-";
+#else
     if (sscanf(birth_date->c_str(), "%d-%d-%d", &year, &month, &day) != 3) return "-";
+#endif
 
     if (month < 1 || month > 12 || day < 1 || day > 31 || year < 1900 || year > 2100) {
         return "-";

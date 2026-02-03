@@ -26,8 +26,6 @@ static std::string timesWordRu(int n) {
         case 4: return "times";
         default: return "times";
     }
-
-    return "times";
 }
 
 static std::string waterFreqText(const Water& w) {
@@ -159,14 +157,14 @@ inline int interactiveTable(const std::vector<PatientTableRow>& rows, int& selec
         switch (action) {
             case InputAction::Up:
                 if (selectedIndex == 0) {
-                    selectedIndex = rows.size() - 1;
+                    selectedIndex = static_cast<int>(rows.size()) - 1;
                 } else {
                     --selectedIndex;
                 }
                 break;
 
             case InputAction::Down:
-                selectedIndex = (selectedIndex + 1) % rows.size();
+                selectedIndex = static_cast<int>((selectedIndex + 1) % rows.size());
                 break;
 
             case InputAction::Enter:

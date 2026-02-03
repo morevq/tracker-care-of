@@ -27,10 +27,10 @@ namespace tracker_api {
 				return this->loginUser(req);
 		});
 
-		CROW_ROUTE(app, "/api/auth/logout")
-			.methods(crow::HTTPMethod::POST)
-			([this](const crow::request& req) {
-			crow::response res(200);
+	CROW_ROUTE(app, "/api/auth/logout")
+		.methods(crow::HTTPMethod::POST)
+		([this](const crow::request&) {
+		crow::response res(200);
 			res.add_header("Set-Cookie", "session_uuid=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict");
 			res.write(json(AuthResponse{ "", "Logged out successfully" }).dump());
 			res.add_header("Content-Type", "application/json");

@@ -1,4 +1,4 @@
-#include "console-utils.h"
+п»ї#include "console-utils.h"
 
 #include <conio.h>
 #include <iostream>
@@ -11,7 +11,7 @@ static WORD toWinColor(ConsoleColor c) {
     return static_cast<WORD>(c);
 }
 
-// установка цвета
+// СѓСЃС‚Р°РЅРѕРІРєР° С†РІРµС‚Р°
 void setColor(ConsoleColor textColor, ConsoleColor bgColor) {
 #ifdef _WIN32
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -22,7 +22,7 @@ void setColor(ConsoleColor textColor, ConsoleColor bgColor) {
 #endif
 }
 
-// сброс цвета
+// СЃР±СЂРѕСЃ С†РІРµС‚Р°
 void resetColor() {
 #ifdef _WIN32
     HANDLE hConsole = GetStdHandle(STD_OUTPUT_HANDLE);
@@ -34,7 +34,7 @@ void resetColor() {
 #endif
 }
 
-// очистка экрана
+// РѕС‡РёСЃС‚РєР° СЌРєСЂР°РЅР°
 void clearScreen() {
 #ifdef _WIN32
     system("cls");
@@ -43,7 +43,7 @@ void clearScreen() {
 #endif
 }
 
-// чтение клавиши
+// С‡С‚РµРЅРёРµ РєР»Р°РІРёС€Рё
 InputAction getInput() {
     int ch = _getch();
 
@@ -63,7 +63,7 @@ InputAction getInput() {
     return InputAction::None;
 }
 
-// UTF-8 длина
+// UTF-8 РґР»РёРЅР°
 size_t utf8_len(const std::string& s) {
     size_t count = 0;
     for (unsigned char c : s) {
@@ -87,13 +87,13 @@ std::string readPassword() {
         if (ch == 8) { // Backspace
             if (!password.empty()) {
                 password.pop_back();
-                std::cout << "\b \b"; // удаление символа из консоли
+                std::cout << "\b \b"; // СѓРґР°Р»РµРЅРёРµ СЃРёРјРІРѕР»Р° РёР· РєРѕРЅСЃРѕР»Рё
             }
             continue;
 		}
 
-		if (ch == 0 || ch == 224) { // служебные клавиши (стрелки и т.п.)
-            _getch();
+		if (ch == 0 || ch == 224) { // СЃР»СѓР¶РµР±РЅС‹Рµ РєР»Р°РІРёС€Рё (СЃС‚СЂРµР»РєРё Рё С‚.Рї.)
+            (void)_getch();
             continue;
         }
 
@@ -104,7 +104,7 @@ std::string readPassword() {
 		}
 
         password += static_cast<char>(ch);
-		std::cout << '*'; // отображение символа-звездочки
+		std::cout << '*'; // РѕС‚РѕР±СЂР°Р¶РµРЅРёРµ СЃРёРјРІРѕР»Р°-Р·РІРµР·РґРѕС‡РєРё
     }
 #else
     termios oldt{};
