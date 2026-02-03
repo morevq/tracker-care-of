@@ -1,17 +1,19 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 CREATE TABLE IF NOT EXISTS users (
-    user_uuid UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    email TEXT UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+	user_uuid UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+	email TEXT UNIQUE NOT NULL,
+	password_hash TEXT NOT NULL,
+	created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+	is_deleted BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS patient(
 	id_patient SERIAL PRIMARY KEY,
 	user_uuid UUID NOT NULL REFERENCES users(user_uuid) ON DELETE CASCADE,
 	name TEXT NOT NULL,
-	birth_date DATE
+	birth_date DATE,
+	is_deleted BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS anamnesis(
@@ -19,7 +21,8 @@ CREATE TABLE IF NOT EXISTS anamnesis(
 	description TEXT,
 	date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
 	photo_url TEXT DEFAULT NULL,
-	id_patient INTEGER NOT NULL REFERENCES patient(id_patient) ON DELETE CASCADE
+	id_patient INTEGER NOT NULL REFERENCES patient(id_patient) ON DELETE CASCADE,
+	is_deleted BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS water(

@@ -14,4 +14,5 @@ public:
 	WaterRepository(PGconn* conn);
 
 	std::vector<Water> getByUserUUID(const std::string& user_uuid);
+	void deleteWater(int id_patient);
 };

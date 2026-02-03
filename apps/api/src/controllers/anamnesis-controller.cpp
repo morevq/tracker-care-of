@@ -2,6 +2,10 @@
 #include "middleware/auth-middleware.h"
 #include <nlohmann/json.hpp>
 
+#ifdef DELETE
+#undef DELETE
+#endif
+
 using json = nlohmann::json;
 
 namespace tracker_api {
@@ -14,13 +18,19 @@ namespace tracker_api {
             .methods(crow::HTTPMethod::GET)
             ([this](const crow::request& req, int patientId) {
                 return this->getAnamnesisData(req, patientId);
-            });
+        });
 
         CROW_ROUTE(app, "/api/anamnesis")
             .methods(crow::HTTPMethod::POST)
             ([this](const crow::request& req) {
                 return this->createAnamnesis(req);
-            });
+        });
+
+        CROW_ROUTE(app, "/api/anamnesis/<int>")
+            .methods(crow::HTTPMethod::DELETE)
+            ([this](const crow::request& req, int id) {
+                return this->deleteAnamnesis(req, id);
+        });
     }
 
     crow::response AnamnesisController::getAnamnesisData(const crow::request& req, int patientId) {
@@ -87,6 +97,21 @@ namespace tracker_api {
         }
         catch (const std::exception& e) {
             return crow::response(400, "Invalid request: " + std::string(e.what()));
+        }
+    }
+
+    crow::response AnamnesisController::deleteAnamnesis(const crow::request& req, int id) {
+        try {
+            auto userUuid = AuthMiddleware::getUserUuidFromCookie(req);
+            if (!userUuid) {
+                return crow::response(401, "Unauthorized");
+            }
+
+            anamnesisRepo.deleteAnamnesis(id);
+            return crow::response(204);
+        }
+        catch (const std::exception& e) {
+            return crow::response(500, "Internal server error: " + std::string(e.what()));
         }
     }
 

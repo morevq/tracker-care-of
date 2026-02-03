@@ -26,8 +26,6 @@ static std::string timesWordRu(int n) {
         case 4: return "times";
         default: return "times";
     }
-
-    return "times";
 }
 
 static std::string waterFreqText(const Water& w) {
@@ -94,7 +92,7 @@ inline int interactiveTable(const std::vector<PatientTableRow>& rows, int& selec
     while (true) {
         clearScreen();
 
-        std::cout << "Use arrow keys or W/S to navigate, Enter to select, + to add patient, Esc to exit\n\n";
+        std::cout << "Use arrow keys or W/S to navigate, Enter to select, + to add patient, Del to delete, Esc to exit\n\n";
 
         drawHeader(widthName, widthBirth, widthAge, widthWaterDate, widthWaterFreq, gap);
 
@@ -159,14 +157,14 @@ inline int interactiveTable(const std::vector<PatientTableRow>& rows, int& selec
         switch (action) {
             case InputAction::Up:
                 if (selectedIndex == 0) {
-                    selectedIndex = rows.size() - 1;
+                    selectedIndex = static_cast<int>(rows.size()) - 1;
                 } else {
                     --selectedIndex;
                 }
                 break;
 
             case InputAction::Down:
-                selectedIndex = (selectedIndex + 1) % rows.size();
+                selectedIndex = static_cast<int>((selectedIndex + 1) % rows.size());
                 break;
 
             case InputAction::Enter:
@@ -177,6 +175,9 @@ inline int interactiveTable(const std::vector<PatientTableRow>& rows, int& selec
 
             case InputAction::Escape:
                 return -1;
+
+            case InputAction::Delete:
+                return -3;
 
             default:
                 break;

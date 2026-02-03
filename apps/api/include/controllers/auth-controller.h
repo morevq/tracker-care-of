@@ -13,6 +13,7 @@ namespace tracker_api {
 
         crow::response registerUser(const crow::request& req);
         crow::response loginUser(const crow::request& req);
+        crow::response deleteUser(const crow::request& req);
 
     public:
         AuthController(AuthService& authService);

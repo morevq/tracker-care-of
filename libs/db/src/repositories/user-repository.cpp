@@ -5,7 +5,7 @@ UserRepository::UserRepository(PGconn* connection) : connection(connection) {}
 
 std::optional<User> UserRepository::getByEmail(const std::string& email) {
 	const char* params[1] = { email.c_str() };
-	const char* query = "SELECT user_uuid, email, password_hash FROM users WHERE email = $1";
+	const char* query = "SELECT user_uuid, email, password_hash FROM users WHERE email = $1 AND is_deleted = FALSE;";
 
 	PGresult* res = PQexecParams(
 		connection,
@@ -38,7 +38,7 @@ std::optional<User> UserRepository::getByEmail(const std::string& email) {
 
 std::optional<User> UserRepository::getByUUID(const std::string& user_uuid) {
 	const char* params[1] = { user_uuid.c_str() };
-	const char* query = "SELECT user_uuid, email, password_hash FROM users WHERE user_uuid = $1";
+	const char* query = "SELECT user_uuid, email, password_hash FROM users WHERE user_uuid = $1 AND is_deleted = FALSE;";
 
 	PGresult* res = PQexecParams(
 		connection,
@@ -72,7 +72,7 @@ std::optional<User> UserRepository::getByUUID(const std::string& user_uuid) {
 std::string UserRepository::createUser(const std::string& email, const std::string& passwordHash) {
 	const char* params[2] = { email.c_str(), passwordHash.c_str() };
 	const char* query =
-		"INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING user_uuid";
+		"INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING user_uuid;";
 
 	PGresult* res = PQexecParams(
 		connection,
@@ -97,4 +97,26 @@ std::string UserRepository::createUser(const std::string& email, const std::stri
 	}
 	PQclear(res);
 	return user_uuid;
+}
+
+void UserRepository::deleteUser(const std::string& user_uuid) {
+	const char* params[] = { user_uuid.c_str() };
+	const char* query = "UPDATE users SET is_deleted = TRUE WHERE user_uuid = $1;";
+
+	PGresult* res = PQexecParams(
+		connection,
+		query,
+		1,
+		nullptr,
+		params,
+		nullptr,
+		nullptr,
+		0
+	);
+
+	if (PQresultStatus(res) != PGRES_COMMAND_OK) {
+		std::cerr << "Error deleting user: " << PQerrorMessage(connection) << std::endl;
+	}
+
+	PQclear(res);
 }

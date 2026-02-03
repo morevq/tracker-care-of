@@ -13,6 +13,7 @@ struct ApiClient {
     bool registerUser(const std::string& email, const std::string& password);
     bool loginUser(const std::string& email, const std::string& password);
     void logout();
+    bool deleteUser();
 
     struct PatientDto {
         int id;
@@ -23,6 +24,7 @@ struct ApiClient {
     std::vector<PatientDto> getPatients();
     bool createPatient(const std::string& name, const std::optional<std::string>& birth_date);
     std::optional<PatientDto> getPatientById(int id);
+    bool deletePatient(int id);
 
     struct WaterDto {
         int id;
@@ -31,6 +33,7 @@ struct ApiClient {
         std::string frequencyMeasure;
     };
     std::vector<WaterDto> getWaterData();
+    bool deleteWater(int id);
 
     struct AnamnesisDto {
         int id;
@@ -40,4 +43,5 @@ struct ApiClient {
     };
     std::vector<AnamnesisDto> getAnamnesisByPatient(int patientId);
     bool createAnamnesis(int patientId, const std::string& description, const std::optional<std::string>& photo_url);
+    bool deleteAnamnesis(int id);
 };

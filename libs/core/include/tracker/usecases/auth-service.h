@@ -13,4 +13,5 @@ public:
 
 	std::optional<std::string> registerUser(const std::string& email, const std::string& password);
 	std::optional<std::string> loginUser(const std::string& email, const std::string& password);
+	PGconn* getConnection() const;
 };

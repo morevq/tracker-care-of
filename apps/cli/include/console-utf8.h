@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 
 #include <string>
 
@@ -57,7 +57,7 @@ inline std::string readConsoleLineUtf8() {
 			continue;
 		}
 
-		if (ch == 0 || ch == 224) { // служебные клавиши (стрелки и т.п.)
+		if (ch == 0 || ch == 224) { // СЃР»СѓР¶РµР±РЅС‹Рµ РєР»Р°РІРёС€Рё (СЃС‚СЂРµР»РєРё Рё С‚.Рї.)
 			_getch();
 			continue;
 		}
@@ -68,13 +68,13 @@ inline std::string readConsoleLineUtf8() {
 			break;
 		}
 
-		// Поддержка Unicode (UTF-16)
+		// РџРѕРґРґРµСЂР¶РєР° Unicode (UTF-16)
 		wchar_t wch;
 		if (ch >= 0 && ch <= 127) {
-			// ASCII символ
+			// ASCII СЃРёРјРІРѕР»
 			wch = static_cast<wchar_t>(ch);
 		} else {
-			// Многобайтовый символ - используем Windows API
+			// РњРЅРѕРіРѕР±Р°Р№С‚РѕРІС‹Р№ СЃРёРјРІРѕР» - РёСЃРїРѕР»СЊР·СѓРµРј Windows API
 			char mbChar[2] = { static_cast<char>(ch), 0 };
 			MultiByteToWideChar(CP_ACP, 0, mbChar, 1, &wch, 1);
 		}

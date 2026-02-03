@@ -8,7 +8,7 @@ std::vector<Patient> PatientRepository::getByUserUUID(const std::string& user_uu
 
 	const char* query =
 		"SELECT id_patient, user_uuid, name, birth_date "
-		"FROM patient WHERE user_uuid = $1;";
+		"FROM patient WHERE user_uuid = $1 AND is_deleted = FALSE;";
 
 	const char* params[] = {
 		user_uuid.c_str()
@@ -61,7 +61,7 @@ std::vector<Patient> PatientRepository::getByUserUUID(const std::string& user_uu
 std::optional<Patient> PatientRepository::getByID(int id_patient) {
 	const char* query =
 		"SELECT id_patient, user_uuid, name, birth_date "
-		"FROM patient WHERE id_patient = $1;";
+		"FROM patient WHERE id_patient = $1 AND is_deleted = FALSE;";
 
 	std::string id_str = std::to_string(id_patient);
 	const char* params[] = { id_str.c_str() };
@@ -142,7 +142,7 @@ void PatientRepository::deletePatient(int id_patient) {
 	const char* params[] = { id_str.c_str() };
 
 	const char* query =
-		"DELETE FROM patient WHERE id_patient = $1;";
+		"UPDATE patient SET is_deleted = TRUE WHERE id_patient = $1;";
 
 	PGresult* res = PQexecParams(
 		connection,

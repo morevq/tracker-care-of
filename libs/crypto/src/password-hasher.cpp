@@ -69,13 +69,13 @@ std::string PasswordHasher::hashPassword(const std::string& password) {
 	char hashBuffer[512]{};
 
 	const int rc = argon2id_hash_encoded(
-		params.timeCost,
-		params.memoryCost,
-		params.parallelism,
+		static_cast<uint32_t>(params.timeCost),
+		static_cast<uint32_t>(params.memoryCost),
+		static_cast<uint32_t>(params.parallelism),
 		password.data(),
 		password.size(),
 		salt.data(),
-		salt.size(),
+		static_cast<uint32_t>(salt.size()),
 		params.hashLength,
 		hashBuffer,
 		sizeof(hashBuffer)

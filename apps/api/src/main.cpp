@@ -56,7 +56,7 @@ int main() {
         int port = env.count("API_PORT") ? std::stoi(env["API_PORT"]) : 8080;
         
         std::cout << "Starting server on port " << port << "..." << std::endl;
-        app.port(port).multithreaded().run();
+        app.port(static_cast<std::uint16_t>(port)).multithreaded().run();
 
         PQfinish(conn);
     }
