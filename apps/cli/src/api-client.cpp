@@ -140,6 +140,20 @@ std::optional<ApiClient::PatientDto> ApiClient::getPatientById(int id) {
     return std::nullopt;
 }
 
+bool ApiClient::deletePatient(int id) {
+    cpr::Response r = cpr::Delete(
+        cpr::Url{ baseUrl + "/api/patients/" + std::to_string(id) },
+        cpr::Header{ {"Cookie", sessionCookie} }
+    );
+
+    if (r.status_code == 0 || r.error) {
+        std::cerr << "Network error in deletePatient: " << r.error.message << '\n';
+        return false;
+    }
+
+    return r.status_code == 204;
+}
+
 std::vector<ApiClient::WaterDto> ApiClient::getWaterData() {
     cpr::Response r = cpr::Get(
         cpr::Url{baseUrl + "/api/water"},

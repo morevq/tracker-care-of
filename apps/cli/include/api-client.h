@@ -23,6 +23,7 @@ struct ApiClient {
     std::vector<PatientDto> getPatients();
     bool createPatient(const std::string& name, const std::optional<std::string>& birth_date);
     std::optional<PatientDto> getPatientById(int id);
+    bool deletePatient(int id);
 
     struct WaterDto {
         int id;
