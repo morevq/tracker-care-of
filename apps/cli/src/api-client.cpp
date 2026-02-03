@@ -263,17 +263,11 @@ bool ApiClient::createAnamnesis(int patientId, const std::string& description, c
         {"photo_url", photo_url.has_value() ? json(*photo_url) : json(nullptr)}
     };
 
-    std::cout << "Sending request to create anamnesis...\n";
-    std::cout << "Request body: " << body.dump() << '\n';
-
     cpr::Response r = cpr::Post(
         cpr::Url{baseUrl + "/api/anamnesis"},
         cpr::Header{{"Content-Type", "application/json"}, {"Cookie", sessionCookie}},
         cpr::Body{body.dump()}
     );
-
-    std::cout << "Response status code: " << r.status_code << '\n';
-    std::cout << "Response body: " << r.text << '\n';
 
     if (r.status_code == 0 || r.error) {
         std::cerr << "Network error in createAnamnesis: " << r.error.message << '\n';

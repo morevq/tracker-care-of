@@ -92,7 +92,7 @@ inline int interactiveTable(const std::vector<PatientTableRow>& rows, int& selec
     while (true) {
         clearScreen();
 
-        std::cout << "Use arrow keys or W/S to navigate, Enter to select, + to add patient, Esc to exit\n\n";
+        std::cout << "Use arrow keys or W/S to navigate, Enter to select, + to add patient, Del to delete, Esc to exit\n\n";
 
         drawHeader(widthName, widthBirth, widthAge, widthWaterDate, widthWaterFreq, gap);
 
@@ -175,6 +175,9 @@ inline int interactiveTable(const std::vector<PatientTableRow>& rows, int& selec
 
             case InputAction::Escape:
                 return -1;
+
+            case InputAction::Delete:
+                return -3;
 
             default:
                 break;

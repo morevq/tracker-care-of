@@ -2,6 +2,7 @@
 #include <vector>
 #include <string>
 #include <algorithm>
+#include <conio.h>
 
 #include "api-client.h"
 #include "auth-handler.h"
@@ -12,6 +13,7 @@
 #include "show-anamnesis-ui.h"
 #include "add-patient-ui.h"
 
+constexpr int PATIENT_DELETE = -3;
 constexpr int PATIENT_ADD_NEW = -2;
 constexpr int PATIENT_EXIT = -1;
 
@@ -49,6 +51,20 @@ try {
             }
 
             int selectedId = interactiveTable(tablePatients, selectedIndex);
+
+            if (selectedId == PATIENT_DELETE) {
+                clearScreen();
+                std::cout << "Delete patient: " << tablePatients[selectedIndex].name << "?\n";
+                std::cout << "Press Y to confirm, any other key to cancel\n";
+
+                int ch = _getch();
+                if (ch == 'y' || ch == 'Y') {
+                    apiClient.deletePatient(tablePatients[selectedIndex].id_patient);
+                    tablePatients = loadPatientsTable(apiClient);
+                    selectedIndex = std::min<int>(selectedIndex, static_cast<int>(tablePatients.size()) - 1);
+                }
+                continue;
+            }
 
             if (selectedId == PATIENT_ADD_NEW) {
                 if (addPatientUI(apiClient)) {

@@ -1,9 +1,10 @@
-#include "show-anamnesis-ui.h"
+﻿#include "show-anamnesis-ui.h"
 
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
 #include <vector>
+#include <conio.h>
 
 #include "add-anamnesis-ui.h"
 #include "console-utils.h"
@@ -107,6 +108,19 @@ void showAnamnesisUI(
 
         if (action == InputAction::Add) {
             if (addAnamnesisUI(patientId, apiClient)) {
+                selected = 0;
+            }
+            continue;
+        }
+
+        if (action == InputAction::Delete && !rows.empty()) {
+            clearScreen();
+            std::cout << "Delete anamnesis record dated " << rows[selected].date << "?\n";
+            std::cout << "Press Y to confirm, any other key to cancel\n";
+
+            int ch = _getch();
+            if (ch == 'y' || ch == 'Y') {
+                apiClient.deleteAnamnesis(rows[selected].id);
                 selected = 0;
             }
             continue;
