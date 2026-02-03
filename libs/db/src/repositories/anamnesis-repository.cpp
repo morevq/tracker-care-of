@@ -8,7 +8,7 @@ std::vector<Anamnesis> AnamnesisRepository::getByPatientId(int id_patient) {
 
 	const char* query =
 		"SELECT id_anamnesis, description, date, photo_url "
-		"FROM anamnesis WHERE id_patient = $1;";
+		"FROM anamnesis WHERE id_patient = $1 AND is_deleted = FALSE;";
 
 	std::string id_str = std::to_string(id_patient);
 	const char* params[] = {
@@ -93,7 +93,7 @@ void AnamnesisRepository::createAnamnesis(int id_patient, std::string descriptio
 
 void AnamnesisRepository::deleteAnamnesis(int id_anamnesis) {
 	const char* query = 
-		"DELETE FROM anamnesis WHERE id_anamnesis = $1;";
+		"UPDATE anamnesis SET is_deleted = TRUE WHERE id_patient = $1;";
 
 	std::string id_str = std::to_string(id_anamnesis);
 	const char* params[] = {
