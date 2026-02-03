@@ -67,6 +67,24 @@ void ApiClient::logout() {
     sessionCookie.clear();
 }
 
+bool ApiClient::deleteUser() {
+    cpr::Response r = cpr::Delete(
+        cpr::Url{ baseUrl + "/api/auth/user" },
+        cpr::Header{ {"Cookie", sessionCookie} }
+    );
+
+    if (r.status_code == 0 || r.error) {
+        std::cerr << "Network error in deleteUser: " << r.error.message << '\n';
+        return false;
+    }
+
+    if (r.status_code == 204) {
+        sessionCookie.clear();
+        return true;
+    }
+    return false;
+}
+
 std::vector<ApiClient::PatientDto> ApiClient::getPatients() {
     cpr::Response r = cpr::Get(
         cpr::Url{baseUrl + "/api/patients"},
@@ -154,6 +172,20 @@ bool ApiClient::deletePatient(int id) {
     return r.status_code == 204;
 }
 
+bool ApiClient::deletePatient(int id) {
+    cpr::Response r = cpr::Delete(
+        cpr::Url{ baseUrl + "/api/patients/" + std::to_string(id) },
+        cpr::Header{ {"Cookie", sessionCookie} }
+    );
+
+    if (r.status_code == 0 || r.error) {
+        std::cerr << "Network error in deletePatient: " << r.error.message << '\n';
+        return false;
+    }
+
+    return r.status_code == 204;
+}
+
 std::vector<ApiClient::WaterDto> ApiClient::getWaterData() {
     cpr::Response r = cpr::Get(
         cpr::Url{baseUrl + "/api/water"},
@@ -183,6 +215,20 @@ std::vector<ApiClient::WaterDto> ApiClient::getWaterData() {
         }
     }
     return waterRecords;
+}
+
+bool ApiClient::deleteWater(int id) {
+    cpr::Response r = cpr::Delete(
+        cpr::Url{ baseUrl + "/api/water/" + std::to_string(id) },
+        cpr::Header{ {"Cookie", sessionCookie} }
+    );
+
+    if (r.status_code == 0 || r.error) {
+        std::cerr << "Network error in deleteWater: " << r.error.message << '\n';
+        return false;
+    }
+
+    return r.status_code == 204;
 }
 
 std::vector<ApiClient::AnamnesisDto> ApiClient::getAnamnesisByPatient(int patientId) {
@@ -256,4 +302,18 @@ bool ApiClient::createAnamnesis(int patientId, const std::string& description, c
 
     std::cout << "Anamnesis created successfully!\n";
     return true;
+}
+
+bool ApiClient::deleteAnamnesis(int id) {
+    cpr::Response r = cpr::Delete(
+        cpr::Url{ baseUrl + "/api/anamnesis/" + std::to_string(id) },
+        cpr::Header{ {"Cookie", sessionCookie} }
+    );
+
+    if (r.status_code == 0 || r.error) {
+        std::cerr << "Network error in deleteAnamnesis: " << r.error.message << '\n';
+        return false;
+    }
+
+    return r.status_code == 204;
 }
