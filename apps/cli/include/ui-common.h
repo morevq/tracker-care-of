@@ -25,5 +25,6 @@ enum class InputAction {
     Down,
     Enter,
     Escape,
-    Add
+    Add,
+    Delete
 };

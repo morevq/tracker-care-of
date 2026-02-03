@@ -51,6 +51,7 @@ InputAction getInput() {
         ch = _getch();
         if (ch == 72) return InputAction::Up;
         if (ch == 80) return InputAction::Down;
+		if (ch == 83) return InputAction::Delete;
         return InputAction::None;
     }
 
