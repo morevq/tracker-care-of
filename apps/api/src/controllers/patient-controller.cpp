@@ -2,6 +2,10 @@
 #include "middleware/auth-middleware.h"
 #include <nlohmann/json.hpp>
 
+#ifdef DELETE
+#undef DELETE
+#endif
+
 using json = nlohmann::json;
 
 namespace tracker_api {
@@ -26,6 +30,12 @@ namespace tracker_api {
 			([this](const crow::request& req, int id) {
 				return this->getPatientById(req, id);
 		});
+
+		CROW_ROUTE(app, "/api/patients/<int>")
+			.methods(crow::HTTPMethod::DELETE)
+			([this](const crow::request& req, int id) {
+			return this->deletePatient(req, id);
+				});
 	}
 
 	crow::response PatientController::createPatient(const crow::request& req) {
@@ -103,4 +113,24 @@ namespace tracker_api {
 			return crow::response(500, "Internal server error: " + std::string(e.what()));
 		}
 	}
-}
+
+	crow::response PatientController::deletePatient(const crow::request& req, int id) {
+		try {
+			auto userUuid = AuthMiddleware::getUserUuidFromCookie(req);
+			if (!userUuid) {
+				return crow::response(401, "Unauthorized");
+			}
+
+			auto patient = patientRepo.getByID(id);
+			if (!patient || patient->user_uuid != *userUuid) {
+				return crow::response(403, "Forbidden: Access denied");
+			}
+
+			patientRepo.deletePatient(id);
+			return crow::response(204);
+		}
+		catch (const std::exception& e) {
+			return crow::response(500, "Internal server error: " + std::string(e.what()));
+		}
+	}
+} 
