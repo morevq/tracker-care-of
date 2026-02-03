@@ -8,7 +8,6 @@
 #undef DELETE
 #endif
 
-
 using json = nlohmann::json;
 
 namespace tracker_api {
