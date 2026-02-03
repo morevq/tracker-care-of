@@ -98,3 +98,25 @@ std::string UserRepository::createUser(const std::string& email, const std::stri
 	PQclear(res);
 	return user_uuid;
 }
+
+void UserRepository::deleteUser(const std::string& user_uuid) {
+	const char* params[] = { user_uuid.c_str() };
+	const char* query = "UPDATE users SET is_deleted = TRUE WHERE user_uuid = $1;";
+
+	PGresult* res = PQexecParams(
+		connection,
+		query,
+		1,
+		nullptr,
+		params,
+		nullptr,
+		nullptr,
+		0
+	);
+
+	if (PQresultStatus(res) != PGRES_COMMAND_OK) {
+		std::cerr << "Error deleting user: " << PQerrorMessage(connection) << std::endl;
+	}
+
+	PQclear(res);
+}

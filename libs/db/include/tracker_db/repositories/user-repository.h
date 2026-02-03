@@ -17,4 +17,6 @@ public:
 	std::optional<User> getByUUID(const std::string& user_uuid);
 
 	std::string createUser(const std::string& email, const std::string& passwordHash);
+
+	void deleteUser(const std::string& user_uuid);
 };

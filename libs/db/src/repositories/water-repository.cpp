@@ -67,3 +67,26 @@ std::vector<Water> WaterRepository::getByUserUUID(const std::string& user_uuid) 
 	PQclear(res);
 	return patients;
 }
+
+void WaterRepository::deleteWater(int id_patient) {
+	std::string id_str = std::to_string(id_patient);
+	const char* params[] = { id_str.c_str() };
+	const char* query = "DELETE FROM water WHERE id_patient = $1;";
+
+	PGresult* res = PQexecParams(
+		connection,
+		query,
+		1,
+		nullptr,
+		params,
+		nullptr,
+		nullptr,
+		0
+	);
+
+	if (PQresultStatus(res) != PGRES_COMMAND_OK) {
+		std::cerr << "Error deleting water: " << PQerrorMessage(connection) << std::endl;
+	}
+
+	PQclear(res);
+}
