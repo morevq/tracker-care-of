@@ -45,3 +45,5 @@ std::optional<std::string> AuthService::loginUser(const std::string& email, cons
 	}
 	return user.user_uuid;
 }
+
+PGconn* AuthService::getConnection() const { return connection; }
