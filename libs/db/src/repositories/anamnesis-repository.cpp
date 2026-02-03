@@ -93,7 +93,7 @@ void AnamnesisRepository::createAnamnesis(int id_patient, std::string descriptio
 
 void AnamnesisRepository::deleteAnamnesis(int id_anamnesis) {
 	const char* query = 
-		"UPDATE anamnesis SET is_deleted = TRUE WHERE id_patient = $1;";
+		"UPDATE anamnesis SET is_deleted = TRUE WHERE id_anamnesis = $1;";
 
 	std::string id_str = std::to_string(id_anamnesis);
 	const char* params[] = {
