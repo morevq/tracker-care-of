@@ -18,13 +18,13 @@ namespace tracker_api {
 		CROW_ROUTE(app, "/api/auth/register")
 			.methods(crow::HTTPMethod::POST)
 			([this](const crow::request& req) {
-			return this->registerUser(req);
+				return this->registerUser(req);
 		});
 
 		CROW_ROUTE(app, "/api/auth/login")
 			.methods(crow::HTTPMethod::POST)
 			([this, &app](const crow::request& req) {
-			return this->loginUser(req);
+				return this->loginUser(req);
 		});
 
 		CROW_ROUTE(app, "/api/auth/logout")
@@ -34,13 +34,13 @@ namespace tracker_api {
 			res.add_header("Set-Cookie", "session_uuid=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict");
 			res.write(json(AuthResponse{ "", "Logged out successfully" }).dump());
 			res.add_header("Content-Type", "application/json");
-			return res;
+				return res;
 		});
 
 		CROW_ROUTE(app, "/api/auth/user")
 			.methods(crow::HTTPMethod::DELETE)
 			([this](const crow::request& req) {
-			return this->deleteUser(req);
+				return this->deleteUser(req);
 		});
 	}
 

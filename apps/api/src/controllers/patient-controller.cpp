@@ -34,7 +34,7 @@ namespace tracker_api {
 		CROW_ROUTE(app, "/api/patients/<int>")
 			.methods(crow::HTTPMethod::DELETE)
 			([this](const crow::request& req, int id) {
-			return this->deletePatient(req, id);
+				return this->deletePatient(req, id);
 		});
 	}
 

@@ -29,7 +29,7 @@ namespace tracker_api {
         CROW_ROUTE(app, "/api/anamnesis/<int>")
             .methods(crow::HTTPMethod::DELETE)
             ([this](const crow::request& req, int id) {
-            return this->deleteAnamnesis(req, id);
+                return this->deleteAnamnesis(req, id);
         });
     }
 
