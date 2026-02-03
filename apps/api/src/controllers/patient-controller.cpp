@@ -35,7 +35,7 @@ namespace tracker_api {
 			.methods(crow::HTTPMethod::DELETE)
 			([this](const crow::request& req, int id) {
 			return this->deletePatient(req, id);
-				});
+		});
 	}
 
 	crow::response PatientController::createPatient(const crow::request& req) {
