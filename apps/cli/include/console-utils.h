@@ -12,3 +12,4 @@ void clearScreen();
 InputAction getInput();
 size_t utf8_len(const std::string& s);
 std::string readPassword();
+int getChar();
