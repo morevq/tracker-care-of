@@ -1,0 +1,50 @@
+services:
+  db:
+    image: postgres:17
+    container_name: tracker-db
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    expose:
+      - "5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - tracker-drsn.tech
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+  
+  api-app:
+    build:
+      context: .
+      target: api
+    container_name: tracker-api
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "${API_PORT:-8080}:8080"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - API_PORT=8080
+    env_file:
+      - .env
+    networks:
+      - tracker-drsn.tech
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+
+networks:
+  tracker-drsn.tech:
+    driver: bridge
