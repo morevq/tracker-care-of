@@ -21,11 +21,11 @@ static std::size_t getRequiredUlong(
 	const std::unordered_map<std::string, std::string>& env,
 	const char* key
 ) {
-	const auto it = env.find(key);
-	if (it == env.end() || it->second.empty()) {
+	std::string val = get_env_var(env, key);
+	if (val.empty()) {
 		throw std::runtime_error(std::string("Missing .env key: ") + key);
 	}
-	return std::stoul(it->second);
+	return std::stoul(val);
 }
 
 const Argon2Params& getParams() {

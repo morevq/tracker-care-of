@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cstdlib> // for std::getenv
 
 #include "tracker_common/env-parser.h"
 
@@ -7,7 +8,8 @@ std::unordered_map<std::string, std::string> load_env(const std::string& path) {
 	std::ifstream file(path);
 
 	if (!file.is_open()) {
-		throw std::runtime_error("Could not open .env file");
+		// Just return empty, assuming env vars set
+		return env;
 	}
 
 	std::string line;
@@ -21,4 +23,15 @@ std::unordered_map<std::string, std::string> load_env(const std::string& path) {
 	}
 
 	return env;
+}
+
+std::string get_env_var(const std::unordered_map<std::string, std::string>& env, const std::string& key, const std::string& default_val) {
+	if (const char* val = std::getenv(key.c_str())) {
+		return std::string(val);
+	}
+	auto it = env.find(key);
+	if (it != env.end()) {
+		return it->second;
+	}
+	return default_val;
 }

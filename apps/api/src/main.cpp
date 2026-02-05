@@ -20,11 +20,11 @@ int main() {
         auto env = load_env(".env");
 
         std::ostringstream conninfo;
-        conninfo << "host=" << env["DB_HOST"]
-                 << " port=" << (env.count("DB_PORT") ? env["DB_PORT"] : "5432")
-                 << " dbname=" << env["DB_NAME"]
-                 << " user=" << env["DB_USER"]
-                 << " password=" << env["DB_PASSWORD"];
+        conninfo << "host=" << get_env_var(env, "DB_HOST")
+                 << " port=" << get_env_var(env, "DB_PORT", "5432")
+                 << " dbname=" << get_env_var(env, "DB_NAME")
+                 << " user=" << get_env_var(env, "DB_USER")
+                 << " password=" << get_env_var(env, "DB_PASSWORD");
 
         PGconn* conn = PQconnectdb(conninfo.str().c_str());
 
