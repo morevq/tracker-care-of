@@ -37,13 +37,11 @@ vcpkg install
 $env:VCPKG_ROOT = "C:\path\to\vcpkg"
 
 # Генерация проекта
-cmake -S . -B out/build/x64-Debug -G "Visual Studio 17 2022" -A x64
+cmake -S . -B out/build/x64-Debug
 
 # Сборка
 cmake --build out/build/x64-Debug
 ```
-
-Или откройте папку проекта в Visual Studio 2022 (откроется как CMake проект).
 
 #### Windows (Ninja)
 
