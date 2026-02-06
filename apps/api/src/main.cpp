@@ -8,6 +8,7 @@
 #include <tracker_db/repositories/patient-repository.h>
 #include <tracker_db/repositories/water-repository.h>
 #include <tracker_db/repositories/anamnesis-repository.h>
+#include <tracker_db/db-utils.h>
 #include <tracker_common/env-parser.h>
 
 #include "controllers/auth-controller.h"
@@ -26,11 +27,10 @@ int main() {
                  << " user=" << get_env_var(env, "DB_USER")
                  << " password=" << get_env_var(env, "DB_PASSWORD");
 
-        PGconn* conn = PQconnectdb(conninfo.str().c_str());
+        auto conn = db_utils::make_pgconn(conninfo.str().c_str());
 
-        if (PQstatus(conn) != CONNECTION_OK) {
-            std::cerr << "Connection to database failed: " << PQerrorMessage(conn) << std::endl;
-            PQfinish(conn);
+        if (PQstatus(conn.get()) != CONNECTION_OK) {
+            std::cerr << "Connection to database failed: " << PQerrorMessage(conn.get()) << std::endl;
             return 1;
         }
 
@@ -83,8 +83,6 @@ int main() {
         std::cout << "Starting server on port " << port << "..." << std::endl;
         std::cout << "Swagger UI: http://localhost:" << port << "/swagger" << std::endl;
         app.port(static_cast<std::uint16_t>(port)).multithreaded().run();
-
-        PQfinish(conn);
     }
     catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;

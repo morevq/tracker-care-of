@@ -4,7 +4,7 @@
 #include "tracker_common/env-parser.h"
 
 void PostgreDB::check_connection() {
-    if (PQstatus(connection) == CONNECTION_OK) {
+    if (PQstatus(connection.get()) == CONNECTION_OK) {
         std::cout << "Successful connection to DB\n";
     }
     else {
@@ -28,13 +28,12 @@ PostgreDB::PostgreDB() {
         nullptr
     };
 
-    connection = PQconnectdbParams(keywords, values, 0);
+    connection = db_utils::PGconnPtr(PQconnectdbParams(keywords, values, 0), db_utils::PGconnDeleter());
 
     check_connection();
 }
 
 PostgreDB::~PostgreDB() {
-    PQfinish(connection);
     std::cout << "Connection closed\n";
 }
 
@@ -53,8 +52,8 @@ int PostgreDB::create_patient(
         birth_date.c_str()
 	};
 
-    PGresult* res = PQexecParams(
-        connection,
+    auto res = db_utils::make_pgresult(PQexecParams(
+        connection.get(),
         query,
         3,
         nullptr,
@@ -62,16 +61,14 @@ int PostgreDB::create_patient(
         nullptr,
         nullptr,
         0
-    );
+    ));
 
-    if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-        std::cerr << "Error executing query: " << PQerrorMessage(connection) << std::endl;
-        PQclear(res);
+    if (PQresultStatus(res.get()) != PGRES_TUPLES_OK) {
+        std::cerr << "Error executing query: " << PQerrorMessage(connection.get()) << std::endl;
         return -1;
     }
 
-    int id_patient = std::stoi(PQgetvalue(res, 0, 0));
-    PQclear(res);
+    int id_patient = std::stoi(PQgetvalue(res.get(), 0, 0));
 
 	return id_patient;
 }
@@ -92,8 +89,8 @@ void PostgreDB::add_anamnesis(
 		photo_url.empty() ? nullptr : photo_url.c_str()
     };
 
-    PGresult* res = PQexecParams(
-        connection,
+    auto res = db_utils::make_pgresult(PQexecParams(
+        connection.get(),
         query,
         3,
         nullptr,
@@ -101,13 +98,11 @@ void PostgreDB::add_anamnesis(
         nullptr,
         nullptr,
         0
-    );
+    ));
 
-    if (PQresultStatus(res) != PGRES_COMMAND_OK) {
-        std::cerr << "Error executing query: " << PQerrorMessage(connection) << std::endl;
+    if (PQresultStatus(res.get()) != PGRES_COMMAND_OK) {
+        std::cerr << "Error executing query: " << PQerrorMessage(connection.get()) << std::endl;
     }
-
-    PQclear(res);
 }
 
 void PostgreDB::add_water_event(int id_patient) {
@@ -119,8 +114,8 @@ void PostgreDB::add_water_event(int id_patient) {
         id_str.c_str()
     };
 
-    PGresult* res = PQexecParams(
-        connection,
+    auto res = db_utils::make_pgresult(PQexecParams(
+        connection.get(),
         query,
         1,
         nullptr,
@@ -128,13 +123,11 @@ void PostgreDB::add_water_event(int id_patient) {
         nullptr,
         nullptr,
         0
-    );
+    ));
 
-    if (PQresultStatus(res) != PGRES_COMMAND_OK) {
-        std::cerr << "Error executing query: " << PQerrorMessage(connection) << std::endl;
+    if (PQresultStatus(res.get()) != PGRES_COMMAND_OK) {
+        std::cerr << "Error executing query: " << PQerrorMessage(connection.get()) << std::endl;
     }
-
-    PQclear(res);
 }
 
 void PostgreDB::set_water_frequency(
@@ -153,8 +146,8 @@ void PostgreDB::set_water_frequency(
         id_str.c_str()
     };
 
-    PGresult* res = PQexecParams(
-        connection,
+    auto res = db_utils::make_pgresult(PQexecParams(
+        connection.get(),
         query,
         3,
         nullptr,
@@ -162,15 +155,13 @@ void PostgreDB::set_water_frequency(
         nullptr,
         nullptr,
         0
-    );
+    ));
 
-    if (PQresultStatus(res) != PGRES_COMMAND_OK) {
-        std::cerr << "Error executing query: " << PQerrorMessage(connection) << std::endl;
+    if (PQresultStatus(res.get()) != PGRES_COMMAND_OK) {
+        std::cerr << "Error executing query: " << PQerrorMessage(connection.get()) << std::endl;
     }
-
-    PQclear(res);
 }
 
 PGconn* PostgreDB::getConnection() {
-    return connection;
+    return connection.get();
 }
