@@ -6,6 +6,8 @@
     "libpq",
     "crow",
     "nlohmann-json",
-    "cpr"
+    "cpr",
+    "hiredis",
+    "redis-plus-plus"
   ]
 }

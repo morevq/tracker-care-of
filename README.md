@@ -14,11 +14,12 @@
 
 Скопируйте `.env.example` в `.env` и настройте параметры
 
-### 2. Запуск приложения
+### 2. Запуск приложения (без CLI)
 - `docker-compose up --build -d`
 
 Это автоматически:
 - Запустит PostgreSQL контейнер
+- Запустит Redis контейнер для хранения сессий
 - Применит все миграции из `libs/db/migrations/`
 - Запустит API сервер
 
@@ -26,7 +27,52 @@
 
 - **API**: http://localhost:8080
 - **Swagger UI**: http://localhost:8080/swagger
-- **CLI**: локальный запуск tracker_cli.exe
+- **CLI**: локальная сборка и запуск (см. раздел "Запуск CLI")
+
+## Запуск CLI
+
+CLI приложение требует локальной сборки с помощью CMake.
+
+### Требования для сборки
+- CMake 3.25+
+- vcpkg (для управления зависимостями)
+- Компилятор с поддержкой C++20
+
+### Сборка и запуск
+
+1. **Настройте vcpkg** (если еще не настроен):
+   ```powershell
+   git clone https://github.com/microsoft/vcpkg
+   .\vcpkg\bootstrap-vcpkg.bat
+   ```
+
+2. **Настройте переменную окружения** `VCPKG_ROOT`:
+   ```powershell
+   $env:VCPKG_ROOT = "C:\path\to\vcpkg"
+   ```
+
+3. **Создайте директорию для сборки**:
+   ```powershell
+   mkdir build
+   cd build
+   ```
+
+4. **Сконфигурируйте проект**:
+   ```powershell
+   cmake .. -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake"
+   ```
+
+5. **Соберите проект**:
+   ```powershell
+   cmake --build . --config Release
+   ```
+
+6. **Запустите CLI**:
+   ```powershell
+   .\apps\cli\Release\tracker_cli.exe
+   ```
+
+**Примечание**: Перед запуском CLI убедитесь, что API сервер и база данных запущены через `docker-compose up`.
 
 ## Возможности
 
@@ -42,6 +88,7 @@
 - Язык: C++20
 - Система сборки: CMake (версия 3.25+)
 - База данных: PostgreSQL (libpq)
+- Хранилище сессий: Redis (redis++/hiredis)
 - Хеширование паролей: Argon2 (unofficial-argon2)
 - HTTP сервер: Crow (микрофреймворк)
 - Форматирование: fmt
@@ -75,16 +122,21 @@ tracker-care-of/
 │   ├── core/                       # Бизнес-модели
 │   │   ├── include/tracker/models/ # Модели данных
 │   │   └── src/models/
-│   └── db/                         # Работа с БД
-│       ├── include/tracker_db/
-│       │   ├── repositories/      # Репозитории
-│       │   ├── usecases/          # Сервисы (auth-service)
-│       │   ├── postgres-db.h
-│       │   └── db-utils.h
-│       ├── src/
-│       │   ├── repositories/
-│       │   └── usecases/
-│       └── migrations/            # SQL миграции и скрипты
+│   ├── db/                         # Работа с БД
+│   │   ├── include/tracker_db/
+│   │   │   ├── repositories/      # Репозитории
+│   │   │   ├── usecases/          # Сервисы (auth-service)
+│   │   │   ├── postgres-db.h
+│   │   │   └── db-utils.h
+│   │   ├── src/
+│   │   │   ├── repositories/
+│   │   │   └── usecases/
+│   │   └── migrations/            # SQL миграции и скрипты
+│   └── session/                    # Управление сессиями
+│       ├── include/tracker_session/
+│       │   ├── session-store.h    # Интерфейс хранилища сессий
+│       │   └── redis-session-store.h
+│       └── src/
 ├── CMakeLists.txt                  # Конфигурация сборки
 ├── start-apps.ps1                  # Скрипт запуска приложений
 └── README.md
@@ -113,12 +165,15 @@ tracker-care-of/
 - **tracker_crypto** - криптографические функции (хеширование паролей)
 - **tracker_core** - модели данных (Patient, User, Water, Anamnesis)
 - **tracker_db** - работа с PostgreSQL, репозитории, auth-service
+- **tracker_session** - управление сессиями (Redis SessionStore)
 - **tracker_cli** - консольное приложение
-- **tracker_api** - HTTP API сервер (использует `tracker_db`)
+- **tracker_api** - HTTP API сервер (использует `tracker_db` и `tracker_session`)
 
 ### Аутентификация
 
 API использует **cookie-based аутентификацию** с HTTP-only cookies (`session_uuid`).
+
+Сессии хранятся в **Redis** с автоматическим TTL (время жизни), что обеспечивает масштабируемость и быстрый доступ.
 
 CLI приложение автоматически управляет сессиями при взаимодействии с API через `API_URL` из `.env`.
 

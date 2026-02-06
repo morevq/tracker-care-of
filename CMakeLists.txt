@@ -20,6 +20,8 @@ find_package(nlohmann_json CONFIG REQUIRED)
 find_package(cpr CONFIG REQUIRED)
 find_package(Crow CONFIG REQUIRED)
 
+find_package(hiredis CONFIG REQUIRED)
+find_package(redis++ CONFIG REQUIRED)
 
 add_library(tracker_common STATIC
     libs/common/src/env-parser.cpp
@@ -37,7 +39,7 @@ target_include_directories(tracker_crypto
         ${CMAKE_SOURCE_DIR}/libs/crypto/include
 )
 target_link_libraries(tracker_crypto
-    PUBLIC 
+    PUBLIC
         unofficial::argon2::libargon2
         tracker_common
 )
@@ -74,6 +76,33 @@ target_link_libraries(tracker_db
         PostgreSQL::PostgreSQL
 )
 
+add_library(tracker_session STATIC
+    libs/session/src/redis-session-store.cpp
+    libs/session/src/cookie.cpp
+    libs/session/src/secure-random.cpp
+)
+target_include_directories(tracker_session
+    PUBLIC
+        ${CMAKE_SOURCE_DIR}/libs/session/include
+)
+find_package(hiredis CONFIG REQUIRED)
+find_package(redis++ CONFIG REQUIRED)
+
+if(TARGET redis++::redis++_static)
+    set(REDISPP_TARGET redis++::redis++_static)
+elseif(TARGET redis++::redis++_shared)
+    set(REDISPP_TARGET redis++::redis++_shared)
+elseif(TARGET redis++::redis++)
+    set(REDISPP_TARGET redis++::redis++)
+else()
+    message(FATAL_ERROR "redis++ package найден, но CMake target не обнаружен (ожидались redis++::redis++_static / redis++::redis++_shared / redis++::redis++)")
+endif()
+
+target_link_libraries(tracker_session
+    PUBLIC
+        ${REDISPP_TARGET}
+        hiredis::hiredis
+)
 
 add_executable(tracker_cli
     apps/cli/src/main.cpp
@@ -99,7 +128,6 @@ target_link_libraries(tracker_cli
         fmt::fmt
 )
 
-
 add_executable(tracker_api
     apps/api/src/main.cpp
     apps/api/src/controllers/anamnesis-controller.cpp
@@ -115,8 +143,10 @@ target_include_directories(tracker_api
 target_link_libraries(tracker_api
     PRIVATE
         tracker_db
+        tracker_session
         fmt::fmt
         nlohmann_json::nlohmann_json
+        Crow::Crow
 )
 
 set_target_properties(tracker_cli PROPERTIES
@@ -126,5 +156,4 @@ set_target_properties(tracker_api PROPERTIES
     VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
 )
 
-# Set tracker_api as the default startup project
 set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT tracker_api)

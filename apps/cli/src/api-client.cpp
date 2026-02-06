@@ -1,11 +1,99 @@
 #include "api-client.h"
 #include <cpr/cpr.h>
 #include <nlohmann/json.hpp>
+#include <algorithm>
+#include <cctype>
+#include <cstring>
 #include <iostream>
 
 using json = nlohmann::json;
 
 ApiClient::ApiClient(const std::string& baseUrl) : baseUrl(baseUrl) {}
+
+std::string ApiClient::extractSessionCookie(const cpr::Response& r) {
+    std::cerr << "DEBUG: Status code: " << r.status_code << '\n';
+    
+    auto cookies = r.cookies;
+    std::cerr << "DEBUG: Checking CPR parsed cookies...\n";
+    for (const auto& cookie : cookies) {
+        std::cerr << "DEBUG: Cookie name: '" << cookie.GetName() << "', value: '" << cookie.GetValue() << "'\n";
+        if (cookie.GetName() == "__Host-session") {
+            std::cerr << "DEBUG: Found session cookie via CPR!\n";
+            return cookie.GetName() + "=" + cookie.GetValue();
+        }
+    }
+    
+    std::cerr << "DEBUG: No session cookie found in CPR cookies list\n";
+
+    auto findSessionCookieInHeader = [](const std::string& headerValue) {
+        constexpr const char* kCookieName = "__Host-session=";
+        auto pos = headerValue.find(kCookieName);
+        if (pos == std::string::npos) {
+            return std::string{};
+        }
+        pos += std::strlen(kCookieName);
+        auto end = headerValue.find(';', pos);
+        if (end == std::string::npos) {
+            end = headerValue.size();
+        }
+        return headerValue.substr(pos, end - pos);
+    };
+
+    auto toLower = [](std::string value) {
+        std::transform(value.begin(), value.end(), value.begin(), [](unsigned char ch) {
+            return static_cast<char>(std::tolower(ch));
+        });
+        return value;
+    };
+
+    std::cerr << "DEBUG: Checking Set-Cookie headers...\n";
+    for (const auto& headerEntry : r.header) {
+        const auto& key = headerEntry.first;
+        const auto& value = headerEntry.second;
+        if (toLower(key) != "set-cookie") {
+            continue;
+        }
+        auto sessionValue = findSessionCookieInHeader(value);
+        if (!sessionValue.empty()) {
+            std::cerr << "DEBUG: Found session cookie in Set-Cookie header!\n";
+            return "__Host-session=" + sessionValue;
+        }
+    }
+
+    if (!r.raw_header.empty()) {
+        std::cerr << "DEBUG: Checking raw headers...\n";
+        size_t start = 0;
+        while (start < r.raw_header.size()) {
+            auto end = r.raw_header.find('\n', start);
+            if (end == std::string::npos) {
+                end = r.raw_header.size();
+            }
+            auto line = r.raw_header.substr(start, end - start);
+            if (!line.empty() && line.back() == '\r') {
+                line.pop_back();
+            }
+
+            auto lowerLine = toLower(line);
+            constexpr const char* kHeaderPrefix = "set-cookie:";
+            if (lowerLine.rfind(kHeaderPrefix, 0) == 0) {
+                auto headerValue = line.substr(std::strlen(kHeaderPrefix));
+                auto sessionValue = findSessionCookieInHeader(headerValue);
+                if (!sessionValue.empty()) {
+                    std::cerr << "DEBUG: Found session cookie in raw headers!\n";
+                    return "__Host-session=" + sessionValue;
+                }
+            }
+
+            if (end == r.raw_header.size()) {
+                break;
+            }
+            start = end + 1;
+        }
+    }
+
+    std::cerr << "DEBUG: Response text: " << r.text << '\n';
+    return "";
+}
 
 bool ApiClient::registerUser(const std::string& email, const std::string& password) {
     json body = {
@@ -20,12 +108,10 @@ bool ApiClient::registerUser(const std::string& email, const std::string& passwo
     );
 
     if (r.status_code == 201) {
-        auto cookies = r.cookies;
-        for (const auto& cookie : cookies) {
-            if (cookie.GetName() == "session_uuid") {
-                sessionCookie = cookie.GetName() + "=" + cookie.GetValue();
-                return true;
-            }
+        std::string cookie = extractSessionCookie(r);
+        if (!cookie.empty()) {
+            sessionCookie = cookie;
+            return true;
         }
     }
     return false;
@@ -44,12 +130,10 @@ bool ApiClient::loginUser(const std::string& email, const std::string& password)
     );
 
     if (r.status_code == 200) {
-        auto cookies = r.cookies;
-        for (const auto& cookie : cookies) {
-            if (cookie.GetName() == "session_uuid") {
-                sessionCookie = cookie.GetName() + "=" + cookie.GetValue();
-                return true;
-            }
+        std::string cookie = extractSessionCookie(r);
+        if (!cookie.empty()) {
+            sessionCookie = cookie;
+            return true;
         }
     }
     else if (r.status_code == 0 || r.error) {
@@ -86,10 +170,10 @@ bool ApiClient::deleteUser() {
 }
 
 std::vector<ApiClient::PatientDto> ApiClient::getPatients() {
-    cpr::Response r = cpr::Get(
-        cpr::Url{baseUrl + "/api/patients"},
-        cpr::Header{{"Cookie", sessionCookie}}
-    );
+cpr::Response r = cpr::Get(
+    cpr::Url{baseUrl + "/api/patients"},
+    cpr::Header{{"Cookie", sessionCookie}}
+);
 
     std::vector<PatientDto> patients;
     
@@ -132,10 +216,10 @@ bool ApiClient::createPatient(const std::string& name, const std::optional<std::
 }
 
 std::optional<ApiClient::PatientDto> ApiClient::getPatientById(int id) {
-    cpr::Response r = cpr::Get(
-        cpr::Url{baseUrl + "/api/patients/" + std::to_string(id)},
-        cpr::Header{{"Cookie", sessionCookie}}
-    );
+cpr::Response r = cpr::Get(
+    cpr::Url{baseUrl + "/api/patients/" + std::to_string(id)},
+    cpr::Header{{"Cookie", sessionCookie}}
+);
 
     if (r.status_code == 0 || r.error) {
         std::cerr << "Network error in getPatientById: " << r.error.message << '\n';
@@ -159,10 +243,10 @@ std::optional<ApiClient::PatientDto> ApiClient::getPatientById(int id) {
 }
 
 bool ApiClient::deletePatient(int id) {
-    cpr::Response r = cpr::Delete(
-        cpr::Url{ baseUrl + "/api/patients/" + std::to_string(id) },
-        cpr::Header{ {"Cookie", sessionCookie} }
-    );
+cpr::Response r = cpr::Delete(
+    cpr::Url{ baseUrl + "/api/patients/" + std::to_string(id) },
+    cpr::Header{ {"Cookie", sessionCookie} }
+);
 
     if (r.status_code == 0 || r.error) {
         std::cerr << "Network error in deletePatient: " << r.error.message << '\n';
@@ -173,10 +257,10 @@ bool ApiClient::deletePatient(int id) {
 }
 
 std::vector<ApiClient::WaterDto> ApiClient::getWaterData() {
-    cpr::Response r = cpr::Get(
-        cpr::Url{baseUrl + "/api/water"},
-        cpr::Header{{"Cookie", sessionCookie}}
-    );
+cpr::Response r = cpr::Get(
+    cpr::Url{baseUrl + "/api/water"},
+    cpr::Header{{"Cookie", sessionCookie}}
+);
 
     std::vector<WaterDto> waterRecords;
     
@@ -204,10 +288,10 @@ std::vector<ApiClient::WaterDto> ApiClient::getWaterData() {
 }
 
 bool ApiClient::deleteWater(int id) {
-    cpr::Response r = cpr::Delete(
-        cpr::Url{ baseUrl + "/api/water/" + std::to_string(id) },
-        cpr::Header{ {"Cookie", sessionCookie} }
-    );
+cpr::Response r = cpr::Delete(
+    cpr::Url{ baseUrl + "/api/water/" + std::to_string(id) },
+    cpr::Header{ {"Cookie", sessionCookie} }
+);
 
     if (r.status_code == 0 || r.error) {
         std::cerr << "Network error in deleteWater: " << r.error.message << '\n';
@@ -218,10 +302,10 @@ bool ApiClient::deleteWater(int id) {
 }
 
 std::vector<ApiClient::AnamnesisDto> ApiClient::getAnamnesisByPatient(int patientId) {
-    cpr::Response r = cpr::Get(
-        cpr::Url{baseUrl + "/api/anamnesis/" + std::to_string(patientId)},
-        cpr::Header{{"Cookie", sessionCookie}}
-    );
+cpr::Response r = cpr::Get(
+    cpr::Url{baseUrl + "/api/anamnesis/" + std::to_string(patientId)},
+    cpr::Header{{"Cookie", sessionCookie}}
+);
 
     std::vector<AnamnesisDto> anamnesisRecords;
     

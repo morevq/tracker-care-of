@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <optional>
+#include <cpr/cpr.h>
 
 struct ApiClient {
     std::string baseUrl;
@@ -44,4 +45,7 @@ struct ApiClient {
     std::vector<AnamnesisDto> getAnamnesisByPatient(int patientId);
     bool createAnamnesis(int patientId, const std::string& description, const std::optional<std::string>& photo_url);
     bool deleteAnamnesis(int id);
+
+private:
+    std::string extractSessionCookie(const cpr::Response& r);
 };
