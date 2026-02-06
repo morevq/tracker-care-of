@@ -19,7 +19,7 @@
 
 Это автоматически:
 - Запустит PostgreSQL контейнер
-- Применит все миграции из `infra/migrations/`
+- Применит все миграции из `libs/db/migrations/`
 - Запустит API сервер
 
 ### 3. Сервисы
@@ -57,7 +57,10 @@ tracker-care-of/
 ├── apps/                           # Приложения
 │   ├── api/                        # API сервер
 │   │   ├── src/
-│   │   ├── dto/
+│   │   │   ├── controllers/       # Контроллеры API
+│   │   │   └── middleware/        # Middleware (аутентификация)
+│   │   ├── include/controllers/
+│   │   ├── dto/                   # Data Transfer Objects
 │   │   └── swagger.json           # OpenAPI спецификация
 │   └── cli/                        # Консольное приложение
 │       ├── include/                # Заголовочные файлы UI
@@ -69,16 +72,19 @@ tracker-care-of/
 │   ├── crypto/                     # Криптография (Argon2)
 │   │   ├── include/tracker_crypto/
 │   │   └── src/
-│   ├── core/                       # Бизнес-логика и модели
-│   │   ├── include/tracker/
-│   │   │   ├── models/            # Модели данных
-│   │   │   └── usecases/          # Сервисы (auth-service)
-│   │   └── src/
+│   ├── core/                       # Бизнес-модели
+│   │   ├── include/tracker/models/ # Модели данных
+│   │   └── src/models/
 │   └── db/                         # Работа с БД
 │       ├── include/tracker_db/
 │       │   ├── repositories/      # Репозитории
-│       │   └── postgres-db.h
-│       └── src/
+│       │   ├── usecases/          # Сервисы (auth-service)
+│       │   ├── postgres-db.h
+│       │   └── db-utils.h
+│       ├── src/
+│       │   ├── repositories/
+│       │   └── usecases/
+│       └── migrations/            # SQL миграции и скрипты
 ├── CMakeLists.txt                  # Конфигурация сборки
 ├── start-apps.ps1                  # Скрипт запуска приложений
 └── README.md
@@ -115,15 +121,6 @@ tracker-care-of/
 API использует **cookie-based аутентификацию** с HTTP-only cookies (`session_uuid`).
 
 CLI приложение автоматически управляет сессиями при взаимодействии с API через `API_URL` из `.env`.
-
-### Зависимости между модулями
-
-```
-tracker_cli --> tracker_db --> tracker_core --> tracker_common
-                   |             
-                   v
-            tracker_crypto --> tracker_common
-```
 
 ## Лицензия
 

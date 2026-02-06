@@ -4,7 +4,7 @@
 #include <memory>
 #include <sstream>
 
-#include <tracker/usecases/auth-service.h>
+#include <tracker_db/usecases/auth-service.h>
 #include <tracker_db/repositories/patient-repository.h>
 #include <tracker_db/repositories/water-repository.h>
 #include <tracker_db/repositories/anamnesis-repository.h>

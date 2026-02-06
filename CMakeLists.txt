@@ -61,7 +61,7 @@ add_library(tracker_db STATIC
     libs/db/src/repositories/patient-repository.cpp
     libs/db/src/repositories/user-repository.cpp
     libs/db/src/repositories/water-repository.cpp
-    libs/core/src/usecases/auth-service.cpp
+    libs/db/src/usecases/auth-service.cpp
 )
 target_include_directories(tracker_db
     PUBLIC
