@@ -37,7 +37,7 @@ try {
             if (tablePatients.empty()) {
                 clearScreen();
                 std::cout << "No patients found.\n";
-                std::cout << "Press A to add patient, Esc to exit\n";
+                std::cout << "Press + to add patient, Esc to exit\n";
 
                 const InputAction a = getInput();
                 if (a == InputAction::Escape) break;
