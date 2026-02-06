@@ -16,15 +16,6 @@ CREATE TABLE IF NOT EXISTS patient(
 	is_deleted BOOLEAN DEFAULT FALSE
 );
 
-CREATE TABLE IF NOT EXISTS anamnesis(
-	id_anamnesis SERIAL PRIMARY KEY,
-	description TEXT,
-	date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-	photo_url TEXT DEFAULT NULL,
-	id_patient INTEGER NOT NULL REFERENCES patient(id_patient) ON DELETE CASCADE,
-	is_deleted BOOLEAN DEFAULT FALSE
-);
-
 CREATE TABLE IF NOT EXISTS water(
 	id_water SERIAL PRIMARY KEY,
 	last_water TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
@@ -37,3 +28,17 @@ CREATE TABLE IF NOT EXISTS water_frequency(
 	frequency_measure TEXT DEFAULT NULL,
 	id_patient INTEGER NOT NULL REFERENCES patient(id_patient) ON DELETE CASCADE
 );
+
+CREATE TABLE IF NOT EXISTS anamnesis(
+	id_anamnesis SERIAL PRIMARY KEY,
+	description TEXT,
+	date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+	photo_url TEXT DEFAULT NULL,
+	id_patient INTEGER NOT NULL REFERENCES patient(id_patient) ON DELETE CASCADE,
+	is_deleted BOOLEAN DEFAULT FALSE
+);
+
+
+CREATE INDEX IF NOT EXISTS idx_patient_user_uuid ON patient(user_uuid);
+CREATE INDEX IF NOT EXISTS idx_water_patient ON water(id_patient);
+CREATE INDEX IF NOT EXISTS idx_anamnesis_patient ON anamnesis(id_patient);
