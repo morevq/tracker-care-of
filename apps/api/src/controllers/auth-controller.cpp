@@ -4,6 +4,8 @@
 #include "middleware/auth-middleware.h"
 #include "tracker_db/repositories/user-repository.h"
 
+#include <tracker_session/cookie.h>
+
 #ifdef DELETE
 #undef DELETE
 #endif
@@ -12,100 +14,152 @@ using json = nlohmann::json;
 
 namespace tracker_api {
 
-	 AuthController::AuthController(AuthService & authService) : authService(authService) {}
+    static constexpr int kSessionTtlSeconds = 86400;
+	static constexpr bool kCookieSecure = false; // DO NOT FORGOT SET true in PROD (using HTTPS)
+    static constexpr const char* kSameSite = "Strict";
+    static constexpr const char* kCookieName = "__Host-session";
 
-	void AuthController::registerRoutes(crow::SimpleApp & app) {
-		CROW_ROUTE(app, "/api/auth/register")
-			.methods(crow::HTTPMethod::POST)
-			([this](const crow::request& req) {
-				return this->registerUser(req);
-		});
+    AuthController::AuthController(AuthService& authService,
+        std::shared_ptr<tracker_session::SessionStore> sessionStore)
+        : authService(authService), sessionStore_(std::move(sessionStore)) {
+    }
 
-		CROW_ROUTE(app, "/api/auth/login")
-			.methods(crow::HTTPMethod::POST)
-			([this, &app](const crow::request& req) {
-				return this->loginUser(req);
-		});
+    void AuthController::registerRoutes(crow::SimpleApp& app) {
+        CROW_ROUTE(app, "/api/auth/register")
+            .methods(crow::HTTPMethod::POST)
+            ([this](const crow::request& req) {
+            return this->registerUser(req);
+                });
 
-	CROW_ROUTE(app, "/api/auth/logout")
-		.methods(crow::HTTPMethod::POST)
-		([this](const crow::request&) {
-		crow::response res(200);
-			res.add_header("Set-Cookie", "session_uuid=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict");
-			res.write(json(AuthResponse{ "", "Logged out successfully" }).dump());
-			res.add_header("Content-Type", "application/json");
-				return res;
-		});
+        CROW_ROUTE(app, "/api/auth/login")
+            .methods(crow::HTTPMethod::POST)
+            ([this](const crow::request& req) {
+            return this->loginUser(req);
+                });
 
-		CROW_ROUTE(app, "/api/auth/user")
-			.methods(crow::HTTPMethod::DELETE)
-			([this](const crow::request& req) {
-				return this->deleteUser(req);
-		});
-	}
+        CROW_ROUTE(app, "/api/auth/logout")
+            .methods(crow::HTTPMethod::POST)
+            ([this](const crow::request& req) {
+            return this->logoutUser(req);
+                });
 
-	crow::response AuthController::registerUser(const crow::request & req) {
-		try {
-		auto requestData = json::parse(req.body);
-		RegisterRequest registerRequest = requestData.get<RegisterRequest>();
+        CROW_ROUTE(app, "/api/auth/user")
+            .methods(crow::HTTPMethod::DELETE)
+            ([this](const crow::request& req) {
+            return this->deleteUser(req);
+                });
+    }
 
-		auto userUuid = authService.registerUser(registerRequest.email, registerRequest.password);
+    crow::response AuthController::registerUser(const crow::request& req) {
+        try {
+            auto requestData = json::parse(req.body);
+            RegisterRequest registerRequest = requestData.get<RegisterRequest>();
 
-			if (!userUuid) {
-				return crow::response(400, "User already exists or registration failed");
-			}
+            auto userUuid = authService.registerUser(registerRequest.email, registerRequest.password);
+            if (!userUuid) {
+                return crow::response(400, "User already exists or registration failed");
+            }
 
-			crow::response res(201);
-			res.add_header("Set-Cookie", "session_uuid=" + *userUuid + 
-				"; Path=/; Max-Age=86400; HttpOnly; SameSite=Strict");
-			res.write(json(AuthResponse{ *userUuid, "User registered successfully" }).dump());
-			res.add_header("Content-Type", "application/json");
-			return res;
-		}
-		catch (const std::exception& e) {
-			return crow::response(400, "Invalid request: " + std::string(e.what()));
-		}
-	}
+            std::string sid = sessionStore_->createSession(*userUuid, kSessionTtlSeconds);
 
-	crow::response AuthController::loginUser(const crow::request & req) {
-		try {
-			auto requestData = json::parse(req.body);
-			LoginRequest loginRequest = requestData.get<LoginRequest>();
+            crow::response res(201);
+            res.add_header("Set-Cookie",
+                tracker_session::cookie::buildSetCookie(
+                    kCookieName, sid, kSessionTtlSeconds,
+                    /*httpOnly=*/true,
+                    /*secure=*/kCookieSecure,
+                    /*sameSite=*/kSameSite,
+                    /*path=*/"/"
+                )
+            );
 
-		auto userUuid = authService.loginUser(loginRequest.email, loginRequest.password);
+            res.write(json(AuthResponse{ *userUuid, "User registered successfully" }).dump());
+            res.add_header("Content-Type", "application/json");
+            return res;
+        }
+        catch (const std::exception& e) {
+            return crow::response(400, "Invalid request: " + std::string(e.what()));
+        }
+    }
 
-		if (!userUuid) {
-			return crow::response(401, "Invalid credentials");
-		}
+    crow::response AuthController::loginUser(const crow::request& req) {
+        try {
+            auto requestData = json::parse(req.body);
+            LoginRequest loginRequest = requestData.get<LoginRequest>();
 
-			crow::response res(200);
-			res.add_header("Set-Cookie", "session_uuid=" + *userUuid + 
-				"; Path=/; Max-Age=86400; HttpOnly; SameSite=Strict");
-			res.write(json(AuthResponse{ *userUuid, "Login successful" }).dump());
-			res.add_header("Content-Type", "application/json");
-			return res;
-		}
-		catch (const std::exception& e) {
-			return crow::response(400, "Invalid request: " + std::string(e.what()));
-		}
-	}
+            auto userUuid = authService.loginUser(loginRequest.email, loginRequest.password);
+            if (!userUuid) {
+                return crow::response(401, "Invalid credentials");
+            }
 
-	crow::response AuthController::deleteUser(const crow::request& req) {
-		try {
-			auto userUuid = AuthMiddleware::getUserUuidFromCookie(req);
-			if (!userUuid) {
-				return crow::response(401, "Unauthorized");
-			}
+            std::string sid = sessionStore_->createSession(*userUuid, kSessionTtlSeconds);
 
-			UserRepository userRepo(authService.getConnection());
-			userRepo.deleteUser(*userUuid);
+            crow::response res(200);
+            res.add_header("Set-Cookie",
+                tracker_session::cookie::buildSetCookie(
+                    kCookieName, sid, kSessionTtlSeconds,
+                    true, kCookieSecure, kSameSite, "/"
+                )
+            );
 
-			crow::response res(204);
-			res.add_header("Set-Cookie", "session_uuid=; Path=/; Max-Age=0; HttpOnly; SameSite=Strict");
-			return res;
-		}
-		catch (const std::exception& e) {
-			return crow::response(500, "Internal server error: " + std::string(e.what()));
-		}
-	}
+            res.write(json(AuthResponse{ *userUuid, "Login successful" }).dump());
+            res.add_header("Content-Type", "application/json");
+            return res;
+        }
+        catch (const std::exception& e) {
+            return crow::response(400, "Invalid request: " + std::string(e.what()));
+        }
+    }
+
+    crow::response AuthController::logoutUser(const crow::request& req) {
+        try {
+            auto sid = AuthMiddleware::getSessionIdFromCookie(req);
+            if (sid) {
+                sessionStore_->destroySession(*sid);
+            }
+
+            crow::response res(200);
+            res.add_header("Set-Cookie",
+                tracker_session::cookie::buildDeleteCookie(
+                    kCookieName, /*httpOnly=*/true, /*secure=*/kCookieSecure, kSameSite, "/"
+                )
+            );
+
+            res.write(json(AuthResponse{ "", "Logged out successfully" }).dump());
+            res.add_header("Content-Type", "application/json");
+            return res;
+        }
+        catch (const std::exception& e) {
+            return crow::response(500, "Internal server error: " + std::string(e.what()));
+        }
+    }
+
+    crow::response AuthController::deleteUser(const crow::request& req) {
+        try {
+            auto userUuid = AuthMiddleware::getUserUuidFromCookie(req);
+            if (!userUuid) {
+                return crow::response(401, "Unauthorized");
+            }
+
+            UserRepository userRepo(authService.getConnection());
+            userRepo.deleteUser(*userUuid);
+
+            auto sid = AuthMiddleware::getSessionIdFromCookie(req);
+            if (sid) {
+                sessionStore_->destroySession(*sid);
+            }
+
+            crow::response res(204);
+            res.add_header("Set-Cookie",
+                tracker_session::cookie::buildDeleteCookie(
+                    kCookieName, true, kCookieSecure, kSameSite, "/"
+                )
+            );
+            return res;
+        }
+        catch (const std::exception& e) {
+            return crow::response(500, "Internal server error: " + std::string(e.what()));
+        }
+    }
+
 }

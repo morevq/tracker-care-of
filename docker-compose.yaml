@@ -11,14 +11,31 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     networks:
-      - tracker-drsn.tech
+      - tracker
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}" ]
       interval: 5s
       timeout: 5s
       retries: 5
     restart: unless-stopped
-  
+
+  redis:
+    image: redis:7-alpine
+    container_name: tracker-redis
+    expose:
+      - "6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    networks:
+      - tracker
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
   migrations:
     image: postgres:17
     container_name: tracker-migrations
@@ -32,16 +49,16 @@ services:
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
     volumes:
-      - ./infra/migrations:/docker-entrypoint-initdb.d/migrations:ro
+      - ./libs/db/migrations:/docker-entrypoint-initdb.d:ro
     networks:
-      - tracker-drsn.tech
+      - tracker
     command: >
       bash -c "
         apt-get update && apt-get install -y postgresql-client &&
-        bash /docker-entrypoint-initdb.d/migrations/apply_migrations.sh
+        bash /docker-entrypoint-initdb.d/apply_migrations.sh
       "
     restart: "no"
-  
+
   api-app:
     build:
       context: .
@@ -52,6 +69,8 @@ services:
         condition: service_healthy
       migrations:
         condition: service_completed_successfully
+      redis:
+        condition: service_healthy
     ports:
       - "${API_PORT:-8080}:8080"
     environment:
@@ -61,15 +80,21 @@ services:
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - API_PORT=8080
+
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+      - COOKIE_SECURE=0
     env_file:
       - .env
     networks:
-      - tracker-drsn.tech
+      - tracker
     restart: unless-stopped
 
 volumes:
   postgres_data:
+  redis_data:
 
 networks:
-  tracker-drsn.tech:
+  tracker:
     driver: bridge
