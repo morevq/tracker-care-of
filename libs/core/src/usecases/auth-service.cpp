@@ -10,7 +10,7 @@ bool isBlank(const std::string& str) {
 	return std::all_of(str.begin(), str.end(), isspace);
 }
 
-AuthService::AuthService(PGconn* connection) : connection(connection) {}
+AuthService::AuthService(db_utils::PGconnPtr connection) : connection(connection) {}
 
 std::optional<std::string> AuthService::registerUser(const std::string& email, const std::string& password) {
 	if (email.empty() || password.empty() || isBlank(email) || isBlank(password)) {
@@ -46,4 +46,4 @@ std::optional<std::string> AuthService::loginUser(const std::string& email, cons
 	return user.user_uuid;
 }
 
-PGconn* AuthService::getConnection() const { return connection; }
+db_utils::PGconnPtr AuthService::getConnection() const { return connection; }
