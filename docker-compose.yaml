@@ -84,7 +84,6 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
 
-      - COOKIE_SECURE=0
     env_file:
       - .env
     networks:

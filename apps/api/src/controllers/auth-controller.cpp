@@ -15,7 +15,7 @@ using json = nlohmann::json;
 namespace tracker_api {
 
     static constexpr int kSessionTtlSeconds = 86400;
-	static constexpr bool kCookieSecure = false; // DO NOT FORGOT SET true in PROD (using HTTPS)
+	static constexpr bool kCookieSecure = true;
     static constexpr const char* kSameSite = "Strict";
     static constexpr const char* kCookieName = "__Host-session";
 
