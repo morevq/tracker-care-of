@@ -1,3 +1,4 @@
+#define NOMINMAX
 #include "auth-handler.h"
 #include "console-utils.h"
 #include <iostream>

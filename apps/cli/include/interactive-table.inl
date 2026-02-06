@@ -1,5 +1,6 @@
 #pragma once
 
+#define NOMINMAX
 #include <algorithm>
 #include <iomanip>
 #include <iostream>
@@ -75,11 +76,11 @@ inline int interactiveTable(const std::vector<PatientTableRow>& rows, int& selec
         const std::string lastWaterDate = waterDateOnly(r.water.lastWater);
         const std::string freqText = waterFreqText(r.water);
 
-        widthName = std::max(widthName, utf8_len(r.name));
-        widthBirth = std::max(widthBirth, utf8_len(r.birth_date));
-        widthAge = std::max(widthAge, utf8_len(r.age));
-        widthWaterDate = std::max(widthWaterDate, utf8_len(lastWaterDate));
-        widthWaterFreq = std::max(widthWaterFreq, utf8_len(freqText));
+        widthName = (std::max)(widthName, utf8_len(r.name));
+        widthBirth = (std::max)(widthBirth, utf8_len(r.birth_date));
+        widthAge = (std::max)(widthAge, utf8_len(r.age));
+        widthWaterDate = (std::max)(widthWaterDate, utf8_len(lastWaterDate));
+        widthWaterFreq = (std::max)(widthWaterFreq, utf8_len(freqText));
     }
 
     const size_t gap = 2;

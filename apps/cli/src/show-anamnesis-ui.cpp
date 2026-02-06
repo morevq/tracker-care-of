@@ -1,4 +1,5 @@
-﻿#include "show-anamnesis-ui.h"
+﻿#define NOMINMAX
+#include "show-anamnesis-ui.h"
 
 #include <algorithm>
 #include <iomanip>
