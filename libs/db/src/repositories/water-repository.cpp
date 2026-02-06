@@ -1,7 +1,7 @@
 #include <iostream>
 #include "tracker_db/repositories/water-repository.h"
 
-WaterRepository::WaterRepository(PGconn* connection) : connection(connection) {}
+WaterRepository::WaterRepository(db_utils::PGconnPtr connection) : connection(connection) {}
 
 std::vector<Water> WaterRepository::getByUserUUID(const std::string& user_uuid) {
 	std::vector<Water> patients;
@@ -21,8 +21,8 @@ std::vector<Water> WaterRepository::getByUserUUID(const std::string& user_uuid) 
 		user_uuid.c_str()
 	};
 
-	PGresult* res = PQexecParams(
-		connection,
+	auto res = db_utils::make_pgresult(PQexecParams(
+		connection.get(),
 		query,
 		1,
 		nullptr,
@@ -30,28 +30,27 @@ std::vector<Water> WaterRepository::getByUserUUID(const std::string& user_uuid) 
 		nullptr,
 		nullptr,
 		0
-	);
+	));
 
-	if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-		std::cerr << "Error executing query: " << PQerrorMessage(connection) << std::endl;
-		PQclear(res);
+	if (PQresultStatus(res.get()) != PGRES_TUPLES_OK) {
+		std::cerr << "Error executing query: " << PQerrorMessage(connection.get()) << std::endl;
 		return patients;
 	}
 
-	int rows = PQntuples(res);
+	int rows = PQntuples(res.get());
 	for (int i = 0; i < rows; ++i) {
-		const int col_id_patient = PQfnumber(res, "id_patient");
-		int col_last_water = PQfnumber(res, "last_water");
-		int col_frequency = PQfnumber(res, "frequency");
-		int col_frequency_measure = PQfnumber(res, "frequency_measure");
+		const int col_id_patient = PQfnumber(res.get(), "id_patient");
+		int col_last_water = PQfnumber(res.get(), "last_water");
+		int col_frequency = PQfnumber(res.get(), "frequency");
+		int col_frequency_measure = PQfnumber(res.get(), "frequency_measure");
 
 
 		Water water;
 
-		water.idPatient = std::stoi(PQgetvalue(res, i, col_id_patient));
-		water.lastWater = PQgetvalue(res, i, col_last_water);
+		water.idPatient = std::stoi(PQgetvalue(res.get(), i, col_id_patient));
+		water.lastWater = PQgetvalue(res.get(), i, col_last_water);
 
-		const char* val = PQgetvalue(res, i, col_frequency);
+		const char* val = PQgetvalue(res.get(), i, col_frequency);
 		if (val != nullptr && val[0] != '\0') {
 			water.frequency = std::stoi(val);
 		}
@@ -59,12 +58,11 @@ std::vector<Water> WaterRepository::getByUserUUID(const std::string& user_uuid) 
 			water.frequency = -1;
 		}
 
-		water.frequencyMeasure = PQgetvalue(res, i, col_frequency_measure);
+		water.frequencyMeasure = PQgetvalue(res.get(), i, col_frequency_measure);
 		
 
 		patients.push_back(water);
 	}
-	PQclear(res);
 	return patients;
 }
 
@@ -73,8 +71,8 @@ void WaterRepository::deleteWater(int id_patient) {
 	const char* params[] = { id_str.c_str() };
 	const char* query = "DELETE FROM water WHERE id_patient = $1;";
 
-	PGresult* res = PQexecParams(
-		connection,
+	auto res = db_utils::make_pgresult(PQexecParams(
+		connection.get(),
 		query,
 		1,
 		nullptr,
@@ -82,11 +80,9 @@ void WaterRepository::deleteWater(int id_patient) {
 		nullptr,
 		nullptr,
 		0
-	);
+	));
 
-	if (PQresultStatus(res) != PGRES_COMMAND_OK) {
-		std::cerr << "Error deleting water: " << PQerrorMessage(connection) << std::endl;
+	if (PQresultStatus(res.get()) != PGRES_COMMAND_OK) {
+		std::cerr << "Error deleting water: " << PQerrorMessage(connection.get()) << std::endl;
 	}
-
-	PQclear(res);
 }

@@ -1,14 +1,14 @@
 #include <iostream>
 #include "tracker_db/repositories/user-repository.h"
 
-UserRepository::UserRepository(PGconn* connection) : connection(connection) {}
+UserRepository::UserRepository(db_utils::PGconnPtr connection) : connection(connection) {}
 
 std::optional<User> UserRepository::getByEmail(const std::string& email) {
 	const char* params[1] = { email.c_str() };
 	const char* query = "SELECT user_uuid, email, password_hash FROM users WHERE email = $1 AND is_deleted = FALSE;";
 
-	PGresult* res = PQexecParams(
-		connection,
+	auto res = db_utils::make_pgresult(PQexecParams(
+		connection.get(),
 		query,
 		1,
 		nullptr,
@@ -16,23 +16,20 @@ std::optional<User> UserRepository::getByEmail(const std::string& email) {
 		nullptr,
 		nullptr,
 		0
-	);
+	));
 
-	if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-		PQclear(res);
+	if (PQresultStatus(res.get()) != PGRES_TUPLES_OK) {
 		return std::nullopt;
 	}
-	if (PQntuples(res) == 0) {
-		PQclear(res);
+	if (PQntuples(res.get()) == 0) {
 		return std::nullopt;
 	}
 
 	User user;
-	user.user_uuid = PQgetvalue(res, 0, 0);
-	user.email = PQgetvalue(res, 0, 1);
-	user.password_hash = PQgetvalue(res, 0, 2);
+	user.user_uuid = PQgetvalue(res.get(), 0, 0);
+	user.email = PQgetvalue(res.get(), 0, 1);
+	user.password_hash = PQgetvalue(res.get(), 0, 2);
 
-	PQclear(res);
 	return user;
 }
 
@@ -40,8 +37,8 @@ std::optional<User> UserRepository::getByUUID(const std::string& user_uuid) {
 	const char* params[1] = { user_uuid.c_str() };
 	const char* query = "SELECT user_uuid, email, password_hash FROM users WHERE user_uuid = $1 AND is_deleted = FALSE;";
 
-	PGresult* res = PQexecParams(
-		connection,
+	auto res = db_utils::make_pgresult(PQexecParams(
+		connection.get(),
 		query,
 		1,
 		nullptr,
@@ -49,23 +46,20 @@ std::optional<User> UserRepository::getByUUID(const std::string& user_uuid) {
 		nullptr,
 		nullptr,
 		0
-	);
+	));
 
-	if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-		PQclear(res);
+	if (PQresultStatus(res.get()) != PGRES_TUPLES_OK) {
 		return std::nullopt;
 	}
-	if (PQntuples(res) == 0) {
-		PQclear(res);
+	if (PQntuples(res.get()) == 0) {
 		return std::nullopt;
 	}
 
 	User user;
-	user.user_uuid = PQgetvalue(res, 0, 0);
-	user.email = PQgetvalue(res, 0, 1);
-	user.password_hash = PQgetvalue(res, 0, 2);
+	user.user_uuid = PQgetvalue(res.get(), 0, 0);
+	user.email = PQgetvalue(res.get(), 0, 1);
+	user.password_hash = PQgetvalue(res.get(), 0, 2);
 
-	PQclear(res);
 	return user;
 }
 
@@ -74,8 +68,8 @@ std::string UserRepository::createUser(const std::string& email, const std::stri
 	const char* query =
 		"INSERT INTO users (email, password_hash) VALUES ($1, $2) RETURNING user_uuid;";
 
-	PGresult* res = PQexecParams(
-		connection,
+	auto res = db_utils::make_pgresult(PQexecParams(
+		connection.get(),
 		query,
 		2,
 		nullptr,
@@ -83,19 +77,17 @@ std::string UserRepository::createUser(const std::string& email, const std::stri
 		nullptr,
 		nullptr,
 		0
-	);
+	));
 
-	if (PQresultStatus(res) != PGRES_TUPLES_OK) {
-		std::cerr << "Error inserting user: " << PQerrorMessage(connection) << std::endl;
-		PQclear(res);
+	if (PQresultStatus(res.get()) != PGRES_TUPLES_OK) {
+		std::cerr << "Error inserting user: " << PQerrorMessage(connection.get()) << std::endl;
 		return "";
 	}
 
 	std::string user_uuid;
-	if (PQntuples(res) > 0) {
-		user_uuid = PQgetvalue(res, 0, 0);
+	if (PQntuples(res.get()) > 0) {
+		user_uuid = PQgetvalue(res.get(), 0, 0);
 	}
-	PQclear(res);
 	return user_uuid;
 }
 
@@ -103,8 +95,8 @@ void UserRepository::deleteUser(const std::string& user_uuid) {
 	const char* params[] = { user_uuid.c_str() };
 	const char* query = "UPDATE users SET is_deleted = TRUE WHERE user_uuid = $1;";
 
-	PGresult* res = PQexecParams(
-		connection,
+	auto res = db_utils::make_pgresult(PQexecParams(
+		connection.get(),
 		query,
 		1,
 		nullptr,
@@ -112,11 +104,9 @@ void UserRepository::deleteUser(const std::string& user_uuid) {
 		nullptr,
 		nullptr,
 		0
-	);
+	));
 
-	if (PQresultStatus(res) != PGRES_COMMAND_OK) {
-		std::cerr << "Error deleting user: " << PQerrorMessage(connection) << std::endl;
+	if (PQresultStatus(res.get()) != PGRES_COMMAND_OK) {
+		std::cerr << "Error deleting user: " << PQerrorMessage(connection.get()) << std::endl;
 	}
-
-	PQclear(res);
 }

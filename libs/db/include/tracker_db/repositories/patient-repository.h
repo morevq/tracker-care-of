@@ -3,15 +3,17 @@
 #include <string>
 #include <vector>
 #include <libpq-fe.h>
+#include <memory>
+#include <tracker_db/db-utils.h>
 
 #include "tracker/models/patient.h"
 
 class PatientRepository {
 private:
-	PGconn* connection;
+	db_utils::PGconnPtr connection;
 
 public:
-	PatientRepository(PGconn* connnection);
+	PatientRepository(db_utils::PGconnPtr connnection);
 
 	std::vector<Patient> getByUserUUID(const std::string& user_uuid);
 	std::optional<Patient> getByID(int id_patient);

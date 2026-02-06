@@ -3,10 +3,12 @@
 #include <libpq-fe.h>
 #include <string>
 #include <unordered_map>
+#include <memory>
+#include <tracker_db/db-utils.h>
 
 class PostgreDB {
 private:
-    PGconn* connection;
+    db_utils::PGconnPtr connection;
     void check_connection();
 
 public:
