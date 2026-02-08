@@ -10,6 +10,7 @@ namespace tracker_api {
 		crow::response createPatient(const crow::request& req);
 		crow::response getPatients(const crow::request& req);
 		crow::response getPatientById(const crow::request& req, int id);
+		crow::response updatePatient(const crow::request& req, int id);
 		crow::response deletePatient(const crow::request& req, int id);
 	public:
 		PatientController(PatientRepository& patientRepo);

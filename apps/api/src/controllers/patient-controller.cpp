@@ -36,6 +36,12 @@ namespace tracker_api {
 			([this](const crow::request& req, int id) {
 				return this->deletePatient(req, id);
 		});
+
+		CROW_ROUTE(app, "/api/patients/<int>")
+			.methods("PATCH"_method)
+			([this](const crow::request& req, int id) {
+			return updatePatient(req, id);
+		});
 	}
 
 	crow::response PatientController::createPatient(const crow::request& req) {
@@ -114,6 +120,57 @@ namespace tracker_api {
 		}
 	}
 
+	crow::response PatientController::updatePatient(const crow::request& req, int id) {
+		try {
+			auto userUuid = AuthMiddleware::getUserUuidFromCookie(req);
+			if (!userUuid) {
+				return crow::response(401, "Unauthorized");
+			}
+
+			auto patient = patientRepo.getByID(id);
+			if (!patient.has_value()) {
+				return crow::response(404, "Patient not found");
+			}
+
+			if (patient->user_uuid != *userUuid) {
+				return crow::response(403, "Forbidden: Access denied");
+			}
+
+			auto body = crow::json::load(req.body);
+			if (!body) {
+				return crow::response(400, "Invalid JSON");
+			}
+
+			std::optional<std::string> name;
+			std::optional<std::string> birth_date;
+
+			if (body.has("name")) {
+				name = body["name"].s();
+			}
+
+			if (body.has("birth_date")) {
+				birth_date = body["birth_date"].s();
+			}
+
+			patientRepo.updatePatient(id, name, birth_date);
+
+			auto updated = patientRepo.getByID(id);
+			crow::json::wvalue response;
+			response["id_patient"] = updated->id_patient;
+			response["name"] = updated->name;
+			if (updated->birth_date.has_value()) {
+				response["birth_date"] = *updated->birth_date;
+			}
+			response["created_at"] = updated->created_at;
+
+			return crow::response(200, response);
+		}
+		catch (const std::exception& e) {
+			return crow::response(500, "Internal server error: " + std::string(e.what()));
+		}
+	}
+
+
 	crow::response PatientController::deletePatient(const crow::request& req, int id) {
 		try {
 			auto userUuid = AuthMiddleware::getUserUuidFromCookie(req);
@@ -133,4 +190,4 @@ namespace tracker_api {
 			return crow::response(500, "Internal server error: " + std::string(e.what()));
 		}
 	}
-} 
+}
