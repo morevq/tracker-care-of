@@ -152,3 +152,53 @@ void PatientRepository::deletePatient(int id_patient) {
 		std::cerr << "Error deleting patient: " << PQerrorMessage(connection.get()) << std::endl;
 	}
 }
+
+
+void PatientRepository::updatePatient(int id_patient, const std::optional<std::string> name, std::optional<std::string> birth_date) {
+	std::vector<std::string> setClauses;
+	std::vector<const char*> params;
+	int paramIndex = 1;
+
+	if (name.has_value()) {
+		setClauses.push_back("name = $" + std::to_string(paramIndex++));
+		params.push_back(name->c_str());
+	}
+
+	if (birth_date.has_value()) {
+		setClauses.push_back("birth_date = $" + std::to_string(paramIndex++));
+		params.push_back(birth_date->c_str());
+	}
+
+	if (setClauses.empty()) {
+		std::cerr << "No fields to update for patient ID " << id_patient << std::endl;
+		return;
+	}
+
+	std::string id_str = std::to_string(id_patient);
+	params.push_back(id_str.c_str());
+
+	std::string query = "UPDATE patient SET " + std::string(setClauses[0]);
+
+	for (size_t i = 1; i < setClauses.size(); ++i) {
+		query += ", " + setClauses[i];
+	}
+
+	query += " WHERE id_patient = $" + std::to_string(paramIndex) + ";";
+
+	PGresult* res = PQexecParams(
+		connection.get(),
+		query.c_str(),
+		static_cast<int>(params.size()),
+		nullptr,
+		params.data(),
+		nullptr,
+		nullptr,
+		0
+	);
+
+	if (PQresultStatus(res) != PGRES_COMMAND_OK) {
+		std::cerr << "Error updating patient: " << PQerrorMessage(connection.get()) << std::endl;
+	}
+
+	PQclear(res);
+}
