@@ -3,6 +3,7 @@
 
 #include "middleware/auth-middleware.h"
 #include "tracker_db/repositories/user-repository.h"
+#include "tracker_crypto/password-hasher.h"
 
 #include <tracker_session/cookie.h>
 
@@ -28,26 +29,32 @@ namespace tracker_api {
         CROW_ROUTE(app, "/api/auth/register")
             .methods(crow::HTTPMethod::POST)
             ([this](const crow::request& req) {
-            return this->registerUser(req);
-                });
+                return this->registerUser(req);
+        });
 
         CROW_ROUTE(app, "/api/auth/login")
             .methods(crow::HTTPMethod::POST)
             ([this](const crow::request& req) {
-            return this->loginUser(req);
-                });
+                return this->loginUser(req);
+        });
 
         CROW_ROUTE(app, "/api/auth/logout")
             .methods(crow::HTTPMethod::POST)
             ([this](const crow::request& req) {
-            return this->logoutUser(req);
-                });
+                return this->logoutUser(req);
+        });
 
         CROW_ROUTE(app, "/api/auth/user")
             .methods(crow::HTTPMethod::DELETE)
             ([this](const crow::request& req) {
-            return this->deleteUser(req);
-                });
+                return this->deleteUser(req);
+        });
+
+        CROW_ROUTE(app, "/api/auth/user")
+            .methods("PATCH"_method)
+            ([this](const crow::request& req) {
+                return this->updateUser(req);
+        });
     }
 
     crow::response AuthController::registerUser(const crow::request& req) {
@@ -128,6 +135,66 @@ namespace tracker_api {
             res.write(json(AuthResponse{ "", "Logged out successfully" }).dump());
             res.add_header("Content-Type", "application/json");
             return res;
+        }
+        catch (const std::exception& e) {
+            return crow::response(500, "Internal server error: " + std::string(e.what()));
+        }
+    }
+
+    crow::response AuthController::updateUser(const crow::request& req) {
+        try {
+            auto userUuid = AuthMiddleware::getUserUuidFromCookie(req);
+            if (!userUuid) {
+                return crow::response(401, "Unauthorized");
+            }
+
+            auto body = crow::json::load(req.body);
+            if (!body) {
+                return crow::response(400, "Invalid JSON");
+            }
+
+            std::optional<std::string> email;
+            std::optional<std::string> password;
+
+            if (body.has("email")) {
+                email = body["email"].s();
+            }
+
+            if (body.has("password")) {
+                password = body["password"].s();
+            }
+
+            if (!email.has_value() && !password.has_value()) {
+                return crow::response(400, "At least one field must be provided");
+            }
+
+            if (email.has_value()) {
+                UserRepository userRepo(authService.getConnection());
+                auto existingUser = userRepo.getByEmail(*email);
+                if (existingUser && existingUser->user_uuid != *userUuid) {
+                    return crow::response(409, "Email already in use");
+                }
+            }
+
+            std::optional<std::string> passwordHash;
+            if (password.has_value()) {
+                passwordHash = PasswordHasher::hashPassword(*password);
+            }
+
+            UserRepository userRepo(authService.getConnection());
+            userRepo.updateUser(*userUuid, email, passwordHash);
+
+            auto updated = userRepo.getByUUID(*userUuid);
+            if (!updated) {
+                return crow::response(404, "User not found");
+            }
+
+            crow::json::wvalue response;
+            response["user_uuid"] = updated->user_uuid;
+            response["email"] = updated->email;
+            response["message"] = "User updated successfully";
+
+            return crow::response(200, response);
         }
         catch (const std::exception& e) {
             return crow::response(500, "Internal server error: " + std::string(e.what()));
