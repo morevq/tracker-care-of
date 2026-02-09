@@ -108,8 +108,7 @@ namespace tracker_api {
 			PatientResponse response{
 				patient->id_patient,
 				patient->name,
-				patient->birth_date,
-				patient->created_at
+				patient->birth_date
 			};
 
 			return crow::response(200, json(response).dump());
