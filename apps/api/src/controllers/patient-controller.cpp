@@ -77,8 +77,7 @@ namespace tracker_api {
 				response.push_back(PatientResponse{
 					patient.id_patient,
 					patient.name,
-					patient.birth_date,
-					patient.created_at
+					patient.birth_date
 				});
 			}
 
