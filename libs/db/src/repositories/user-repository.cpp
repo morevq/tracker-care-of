@@ -110,3 +110,49 @@ void UserRepository::deleteUser(const std::string& user_uuid) {
 		std::cerr << "Error deleting user: " << PQerrorMessage(connection.get()) << std::endl;
 	}
 }
+
+void UserRepository::updateUser(const std::string& user_uuid, 
+                                const std::optional<std::string>& email, 
+                                const std::optional<std::string>& password_hash) {
+	if (!email.has_value() && !password_hash.has_value()) {
+		return;
+	}
+
+	std::string query = "UPDATE users SET ";
+	std::vector<std::string> setClauses;
+	std::vector<const char*> params;
+	int paramIndex = 1;
+
+	if (email.has_value()) {
+		setClauses.push_back("email = $" + std::to_string(paramIndex++));
+		params.push_back(email->c_str());
+	}
+
+	if (password_hash.has_value()) {
+		setClauses.push_back("password_hash = $" + std::to_string(paramIndex++));
+		params.push_back(password_hash->c_str());
+	}
+
+	query += setClauses[0];
+	for (size_t i = 1; i < setClauses.size(); ++i) {
+		query += ", " + setClauses[i];
+	}
+
+	query += " WHERE user_uuid = $" + std::to_string(paramIndex) + " AND is_deleted = FALSE;";
+	params.push_back(user_uuid.c_str());
+
+	auto res = db_utils::make_pgresult(PQexecParams(
+		connection.get(),
+		query.c_str(),
+		static_cast<int>(params.size()),
+		nullptr,
+		params.data(),
+		nullptr,
+		nullptr,
+		0
+	));
+
+	if (PQresultStatus(res.get()) != PGRES_COMMAND_OK) {
+		std::cerr << "Error updating user: " << PQerrorMessage(connection.get()) << std::endl;
+	}
+}

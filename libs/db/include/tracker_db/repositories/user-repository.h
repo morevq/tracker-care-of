@@ -1,6 +1,7 @@
 #pragma once
 
 #include <string>
+#include <vector>
 #include <optional>
 #include <libpq-fe.h>
 #include <memory>
@@ -19,6 +20,6 @@ public:
 	std::optional<User> getByUUID(const std::string& user_uuid);
 
 	std::string createUser(const std::string& email, const std::string& passwordHash);
-
+	void updateUser(const std::string& user_uuid, const std::optional<std::string>& email, const std::optional<std::string>& password_hash);
 	void deleteUser(const std::string& user_uuid);
 };
