@@ -151,6 +151,10 @@ namespace tracker_api {
 				birth_date = body["birth_date"].s();
 			}
 
+			if (!name.has_value() && !birth_date.has_value()) {
+				return crow::response(400, "At least one field must be provided");
+			}
+
 			patientRepo.updatePatient(id, name, birth_date);
 
 			auto updated = patientRepo.getByID(id);
@@ -160,7 +164,6 @@ namespace tracker_api {
 			if (updated->birth_date.has_value()) {
 				response["birth_date"] = *updated->birth_date;
 			}
-			response["created_at"] = updated->created_at;
 
 			return crow::response(200, response);
 		}

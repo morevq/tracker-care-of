@@ -144,6 +144,10 @@ namespace tracker_api {
                 photo_url = body["photo_url"].s();
             }
 
+            if (!description.has_value() && !date.has_value() && !photo_url.has_value()) {
+                return crow::response(400, "At least one field must be provided");
+            }
+
             anamnesisRepo.updateAnamnesis(id, description, date, photo_url);
 
             auto updated = anamnesisRepo.getByID(id);
