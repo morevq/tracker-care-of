@@ -40,7 +40,7 @@ namespace tracker_api {
 		CROW_ROUTE(app, "/api/patients/<int>")
 			.methods("PATCH"_method)
 			([this](const crow::request& req, int id) {
-			return updatePatient(req, id);
+				return updatePatient(req, id);
 		});
 	}
 

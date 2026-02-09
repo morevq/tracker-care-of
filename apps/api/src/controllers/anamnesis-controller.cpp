@@ -35,7 +35,7 @@ namespace tracker_api {
         CROW_ROUTE(app, "/api/anamnesis/<int>")
             .methods("PATCH"_method)
             ([this](const crow::request& req, int id) {
-            return updateAnamnesis(req, id);
+                return updateAnamnesis(req, id);
         });
     }
 
