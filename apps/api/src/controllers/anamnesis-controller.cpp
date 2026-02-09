@@ -31,6 +31,12 @@ namespace tracker_api {
             ([this](const crow::request& req, int id) {
                 return this->deleteAnamnesis(req, id);
         });
+
+        CROW_ROUTE(app, "/api/anamnesis/<int>")
+            .methods("PATCH"_method)
+            ([this](const crow::request& req, int id) {
+            return updateAnamnesis(req, id);
+        });
     }
 
     crow::response AnamnesisController::getAnamnesisData(const crow::request& req, int patientId) {
@@ -97,6 +103,63 @@ namespace tracker_api {
         }
         catch (const std::exception& e) {
             return crow::response(400, "Invalid request: " + std::string(e.what()));
+        }
+    }
+
+    crow::response AnamnesisController::updateAnamnesis(const crow::request& req, int id) {
+        try {
+            auto userUuid = AuthMiddleware::getUserUuidFromCookie(req);
+            if (!userUuid) {
+                return crow::response(401, "Unauthorized");
+            }
+
+            auto anamnesis = anamnesisRepo.getByID(id);
+            if (!anamnesis.has_value()) {
+                return crow::response(404, "Anamnesis not found");
+            }
+
+            auto patient = patientRepo.getByID(anamnesis->id_patient);
+            if (!patient || patient->user_uuid != *userUuid) {
+                return crow::response(403, "Forbidden: Access denied");
+            }
+
+            auto body = crow::json::load(req.body);
+            if (!body) {
+                return crow::response(400, "Invalid JSON");
+            }
+
+            std::optional<std::string> description;
+            std::optional<std::string> date;
+            std::optional<std::string> photo_url;
+
+            if (body.has("description")) {
+                description = body["description"].s();
+            }
+
+            if (body.has("date")) {
+                date = body["date"].s();
+            }
+
+            if (body.has("photo_url")) {
+                photo_url = body["photo_url"].s();
+            }
+
+            anamnesisRepo.updateAnamnesis(id, description, date, photo_url);
+
+            auto updated = anamnesisRepo.getByID(id);
+            crow::json::wvalue response;
+            response["id"] = updated->id;
+            response["patient_id"] = updated->id_patient;
+            response["description"] = updated->description;
+            if (updated->photo_url.has_value()) {
+                response["photo_url"] = *updated->photo_url;
+            }
+            response["created_at"] = updated->created_at;
+
+            return crow::response(200, response);
+        }
+        catch (const std::exception& e) {
+            return crow::response(500, "Internal server error: " + std::string(e.what()));
         }
     }
 

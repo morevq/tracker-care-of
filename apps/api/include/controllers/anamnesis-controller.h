@@ -13,6 +13,7 @@ namespace tracker_api {
 
         crow::response getAnamnesisData(const crow::request& req, int patientId);
         crow::response createAnamnesis(const crow::request& req);
+        crow::response updateAnamnesis(const crow::request& req, int id);
         crow::response deleteAnamnesis(const crow::request& req, int id);
 
     public:
