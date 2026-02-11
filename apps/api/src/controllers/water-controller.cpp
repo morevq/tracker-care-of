@@ -20,6 +20,12 @@ namespace tracker_api {
 			return this->getWaterData(req);
 		});
 
+		CROW_ROUTE(app, "/api/water/<int>")
+			.methods(crow::HTTPMethod::GET)
+			([this](const crow::request& req, int id) {
+			return this->getWaterByPatientId(req, id);
+		});
+
 		CROW_ROUTE(app, "/api/water")
 			.methods(crow::HTTPMethod::POST)
 			([this](const crow::request& req) {
@@ -51,6 +57,41 @@ namespace tracker_api {
 					water.frequencyMeasure
 				});
 			}
+
+			return crow::response(200, json(response).dump());
+		}
+		catch (const std::exception& e) {
+			return crow::response(500, "Internal server error: " + std::string(e.what()));
+		}
+	}
+
+	crow::response WaterController::getWaterByPatientId(const crow::request& req, int id) {
+		try {
+			auto userUuid = AuthMiddleware::getUserUuidFromCookie(req);
+			if (!userUuid) {
+				return crow::response(401, "Unauthorized");
+			}
+
+			auto patient = patientRepo.getByID(id);
+			if (!patient) {
+				return crow::response(404, "Patient not found");
+			}
+
+			if (patient->user_uuid != *userUuid) {
+				return crow::response(403, "Forbidden: Access denied");
+			}
+
+			auto water = waterRepo.getByPatientID(id);
+			if (!water) {
+				return crow::response(404, "Water record not found");
+			}
+
+			WaterResponse response{
+				water->idPatient,
+				water->lastWater,
+				water->frequency,
+				water->frequencyMeasure
+			};
 
 			return crow::response(200, json(response).dump());
 		}

@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <optional>
 #include <libpq-fe.h>
 #include <memory>
 #include <tracker_db/db-utils.h>
@@ -16,6 +17,7 @@ public:
 	WaterRepository(db_utils::PGconnPtr conn);
 
 	std::vector<Water> getByUserUUID(const std::string& user_uuid);
+	std::optional<Water> getByPatientID(int id_patient);
 	void addWater(int id_patient, const std::string& last_water);
 	void deleteWater(int id_patient);
 };

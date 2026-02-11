@@ -66,6 +66,61 @@ std::vector<Water> WaterRepository::getByUserUUID(const std::string& user_uuid) 
 	return patients;
 }
 
+std::optional<Water> WaterRepository::getByPatientID(int id_patient) {
+	const char* query =
+		"SELECT w.id_patient, w.last_water, wf.frequency, wf.frequency_measure "
+		"FROM water AS w "
+		"LEFT JOIN water_frequency AS wf ON w.id_patient = wf.id_patient "
+		"WHERE w.id_patient = $1 "
+		"ORDER BY w.last_water DESC "
+		"LIMIT 1;";
+
+	std::string id_str = std::to_string(id_patient);
+	const char* params[] = { id_str.c_str() };
+
+	auto res = db_utils::make_pgresult(PQexecParams(
+		connection.get(),
+		query,
+		1,
+		nullptr,
+		params,
+		nullptr,
+		nullptr,
+		0
+	));
+
+	if (PQresultStatus(res.get()) != PGRES_TUPLES_OK) {
+		std::cerr << "Error executing query: " << PQerrorMessage(connection.get()) << std::endl;
+		return std::nullopt;
+	}
+
+	int rows = PQntuples(res.get());
+	if (rows == 0) {
+		return std::nullopt;
+	}
+
+	int col_id_patient = PQfnumber(res.get(), "id_patient");
+	int col_last_water = PQfnumber(res.get(), "last_water");
+	int col_frequency = PQfnumber(res.get(), "frequency");
+	int col_frequency_measure = PQfnumber(res.get(), "frequency_measure");
+
+	Water water;
+	water.idPatient = std::stoi(PQgetvalue(res.get(), 0, col_id_patient));
+	water.lastWater = PQgetvalue(res.get(), 0, col_last_water);
+
+	const char* val = PQgetvalue(res.get(), 0, col_frequency);
+	if (val != nullptr && val[0] != '\0') {
+		water.frequency = std::stoi(val);
+	}
+	else {
+		water.frequency = -1;
+	}
+
+	water.frequencyMeasure = PQgetvalue(res.get(), 0, col_frequency_measure);
+
+	return water;
+}
+
 void WaterRepository::addWater(int id_patient, const std::string& last_water) {
 	std::string id_str = std::to_string(id_patient);
 	const char* params[] = { id_str.c_str(), last_water.c_str() };
