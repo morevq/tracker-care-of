@@ -7,15 +7,16 @@ std::vector<Water> WaterRepository::getByUserUUID(const std::string& user_uuid) 
 	std::vector<Water> patients;
 
 	const char* query =
-		"WITH ranked_water AS ("
-		"	SELECT w.id_patient, w.last_water, wf.frequency, wf.frequency_measure, "
-		"		ROW_NUMBER() OVER(PARTITION BY w.id_patient ORDER BY w.last_water DESC) as rn "
-		"	FROM water AS w LEFT JOIN water_frequency AS wf ON w.id_patient = wf.id_patient "
-		")"
-		"SELECT rw.last_water, rw.frequency, rw.frequency_measure, p.id_patient "
-		"FROM patient AS p "
-		"LEFT JOIN ranked_water AS rw ON p.id_patient = rw.id_patient AND rw.rn = 1 "
-		"WHERE p.user_uuid = $1 ORDER BY rw.last_water DESC; ";
+		R"(SELECT
+			  w.last_water,
+			  wf.frequency,
+			  wf.frequency_measure,
+			  p.id_patient
+		  FROM patient p
+		  LEFT JOIN water w ON w.id_patient = p.id_patient
+		  LEFT JOIN water_frequency wf ON wf.id_patient = p.id_patient
+		  WHERE p.user_uuid = $1
+		  ORDER BY w.last_water DESC NULLS LAST;)";
 
 	const char* params[] = {
 		user_uuid.c_str()
