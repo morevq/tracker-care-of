@@ -10,14 +10,20 @@ using json = nlohmann::json;
 
 namespace tracker_api {
 
-	WaterController::WaterController(WaterRepository& waterRepo)
-		: waterRepo(waterRepo) {}
+	WaterController::WaterController(WaterRepository& waterRepo, PatientRepository& patientRepo)
+		: waterRepo(waterRepo), patientRepo(patientRepo) {}
 
 	void WaterController::registerRoutes(crow::SimpleApp& app) {
 		CROW_ROUTE(app, "/api/water")
 			.methods(crow::HTTPMethod::GET)
 			([this](const crow::request& req) {
 			return this->getWaterData(req);
+		});
+
+		CROW_ROUTE(app, "/api/water")
+			.methods(crow::HTTPMethod::POST)
+			([this](const crow::request& req) {
+			return this->addWater(req);
 		});
 
 		CROW_ROUTE(app, "/api/water/<int>")
@@ -53,11 +59,49 @@ namespace tracker_api {
 		}
 	}
 
+	crow::response WaterController::addWater(const crow::request& req) {
+		try {
+			auto userUuid = AuthMiddleware::getUserUuidFromCookie(req);
+			if (!userUuid) {
+				return crow::response(401, "Unauthorized");
+			}
+
+			auto body = crow::json::load(req.body);
+			if (!body) {
+				return crow::response(400, "Invalid JSON");
+			}
+
+			if (!body.has("patient_id") || !body.has("last_water")) {
+				return crow::response(400, "Missing required fields: patient_id and last_water");
+			}
+
+			int patientId = body["patient_id"].i();
+			std::string lastWater = body["last_water"].s();
+
+			auto patient = patientRepo.getByID(patientId);
+			if (!patient || patient->user_uuid != *userUuid) {
+				return crow::response(403, "Forbidden: Access denied");
+			}
+
+			waterRepo.addWater(patientId, lastWater);
+
+			return crow::response(201, "Water record created successfully");
+		}
+		catch (const std::exception& e) {
+			return crow::response(500, "Internal server error: " + std::string(e.what()));
+		}
+	}
+
 	crow::response WaterController::deleteWater(const crow::request& req, int id) {
 		try {
 			auto userUuid = AuthMiddleware::getUserUuidFromCookie(req);
 			if (!userUuid) {
 				return crow::response(401, "Unauthorized");
+			}
+
+			auto patient = patientRepo.getByID(id);
+			if (!patient || patient->user_uuid != *userUuid) {
+				return crow::response(403, "Forbidden: Access denied");
 			}
 
 			waterRepo.deleteWater(id);
