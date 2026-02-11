@@ -12,7 +12,7 @@ namespace tracker_api {
 		PatientRepository& patientRepo;
 
 		crow::response getWaterData(const crow::request& req);
-		crow::response WaterController::addWater(const crow::request& req);
+		crow::response addWater(const crow::request& req);
 		crow::response deleteWater(const crow::request& req, int id);
 
 	public:
