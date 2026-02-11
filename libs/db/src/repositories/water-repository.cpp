@@ -66,6 +66,40 @@ std::vector<Water> WaterRepository::getByUserUUID(const std::string& user_uuid) 
 	return patients;
 }
 
+void WaterRepository::addWater(int id_patient, const std::string& last_water) {
+	std::string id_str = std::to_string(id_patient);
+	const char* params[] = { id_str.c_str(), last_water.c_str() };
+
+	auto exec_cmd = [&](const char* q, int nParams, const char* const* p) -> bool {
+		auto res = db_utils::make_pgresult(PQexecParams(
+			connection.get(), q, nParams, nullptr, p, nullptr, nullptr, 0
+		));
+		auto st = PQresultStatus(res.get());
+		if (!(st == PGRES_COMMAND_OK || st == PGRES_TUPLES_OK)) {
+			std::cerr << "PG error: " << PQerrorMessage(connection.get()) << std::endl;
+			return false;
+		}
+		return true;
+		};
+
+	if (!exec_cmd("BEGIN;", 0, nullptr)) return;
+
+	if (!exec_cmd("DELETE FROM water WHERE id_patient = $1;", 1, &params[0])) {
+		exec_cmd("ROLLBACK;", 0, nullptr);
+		return;
+	}
+
+	if (!exec_cmd("INSERT INTO water (id_patient, last_water) VALUES ($1, $2);", 2, params)) {
+		exec_cmd("ROLLBACK;", 0, nullptr);
+		return;
+	}
+
+	if (!exec_cmd("COMMIT;", 0, nullptr)) {
+		exec_cmd("ROLLBACK;", 0, nullptr);
+		return;
+	}
+}
+
 void WaterRepository::deleteWater(int id_patient) {
 	std::string id_str = std::to_string(id_patient);
 	const char* params[] = { id_str.c_str() };

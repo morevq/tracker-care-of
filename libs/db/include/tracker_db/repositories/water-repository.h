@@ -16,5 +16,6 @@ public:
 	WaterRepository(db_utils::PGconnPtr conn);
 
 	std::vector<Water> getByUserUUID(const std::string& user_uuid);
+	void addWater(int id_patient, const std::string& last_water);
 	void deleteWater(int id_patient);
 };
