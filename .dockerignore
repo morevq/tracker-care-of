@@ -4,3 +4,5 @@ vcpkg_installed/
 .git/
 .vscode/
 .env
+.vs/
+
