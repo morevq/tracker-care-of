@@ -60,7 +60,7 @@ int main() {
 
         tracker_api::AuthController authController(authService, sessionStore);
         tracker_api::PatientController patientController(patientRepo);
-        tracker_api::WaterController waterController(waterRepo);
+        tracker_api::WaterController waterController(waterRepo, patientRepo);
         tracker_api::AnamnesisController anamnesisController(anamnesisRepo, patientRepo);
 
         crow::SimpleApp app;
