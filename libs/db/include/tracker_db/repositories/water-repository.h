@@ -18,6 +18,6 @@ public:
 
 	std::vector<Water> getByUserUUID(const std::string& user_uuid);
 	std::optional<Water> getByPatientID(int id_patient);
-	void addWater(int id_patient, const std::string& last_water);
+	bool addWater(int id_patient, const std::string& last_water);
 	void deleteWater(int id_patient);
 };

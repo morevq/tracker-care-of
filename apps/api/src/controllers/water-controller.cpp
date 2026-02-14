@@ -124,7 +124,11 @@ namespace tracker_api {
 				return crow::response(403, "Forbidden: Access denied");
 			}
 
-			waterRepo.addWater(patientId, lastWater);
+			bool success = waterRepo.addWater(patientId, lastWater);
+			
+			if (!success) {
+				return crow::response(400, "Failed to add water record. Check that the date is not earlier than patient birth date.");
+			}
 
 			return crow::response(201, "Water record created successfully");
 		}

@@ -122,8 +122,34 @@ std::optional<Water> WaterRepository::getByPatientID(int id_patient) {
 	return water;
 }
 
-void WaterRepository::addWater(int id_patient, const std::string& last_water) {
+bool WaterRepository::addWater(int id_patient, const std::string& last_water) {
 	std::string id_str = std::to_string(id_patient);
+	const char* params_check[] = { id_str.c_str() };
+	const char* query_check = 
+		"SELECT birth_date FROM patient WHERE id_patient = $1 AND is_deleted = FALSE;";
+
+	auto res_check = db_utils::make_pgresult(PQexecParams(
+		connection.get(),
+		query_check,
+		1,
+		nullptr,
+		params_check,
+		nullptr,
+		nullptr,
+		0
+	));
+
+	if (PQresultStatus(res_check.get()) != PGRES_TUPLES_OK || PQntuples(res_check.get()) == 0) {
+		return false;
+	}
+
+	if (!PQgetisnull(res_check.get(), 0, 0)) {
+		std::string birth_date = PQgetvalue(res_check.get(), 0, 0);
+		if (!birth_date.empty() && last_water < birth_date) {
+			return false;
+		}
+	}
+
 	const char* params[] = { id_str.c_str(), last_water.c_str() };
 
 	auto exec_cmd = [&](const char* q, int nParams, const char* const* p) -> bool {
@@ -136,24 +162,10 @@ void WaterRepository::addWater(int id_patient, const std::string& last_water) {
 			return false;
 		}
 		return true;
-		};
+	};
 
-	if (!exec_cmd("BEGIN;", 0, nullptr)) return;
-
-	if (!exec_cmd("DELETE FROM water WHERE id_patient = $1;", 1, &params[0])) {
-		exec_cmd("ROLLBACK;", 0, nullptr);
-		return;
-	}
-
-	if (!exec_cmd("INSERT INTO water (id_patient, last_water) VALUES ($1, $2);", 2, params)) {
-		exec_cmd("ROLLBACK;", 0, nullptr);
-		return;
-	}
-
-	if (!exec_cmd("COMMIT;", 0, nullptr)) {
-		exec_cmd("ROLLBACK;", 0, nullptr);
-		return;
-	}
+	exec_cmd("INSERT INTO water (id_patient, last_water) VALUES ($1, $2);", 2, params);
+	return true;
 }
 
 void WaterRepository::deleteWater(int id_patient) {
