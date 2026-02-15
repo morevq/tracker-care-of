@@ -25,7 +25,7 @@ namespace tracker_api {
         AuthController(AuthService& authService,
             std::shared_ptr<tracker_session::SessionStore> sessionStore);
 
-        void registerRoutes(crow::SimpleApp& app);
+        crow::Blueprint getBlueprint();
     };
 
 } 

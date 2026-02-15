@@ -19,7 +19,7 @@ namespace tracker_api {
 	public:
 		WaterController(WaterRepository& waterRepo, PatientRepository& patientRepo);
 
-		void registerRoutes(crow::SimpleApp& app);
+		crow::Blueprint getBlueprint();
 	};
 
 }

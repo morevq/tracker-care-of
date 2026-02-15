@@ -1,4 +1,5 @@
 #include "controllers/auth-controller.h"
+#include <tracker_common/http-responses.h>
 #include <nlohmann/json.hpp>
 
 #include "middleware/auth-middleware.h"
@@ -25,36 +26,40 @@ namespace tracker_api {
         : authService(authService), sessionStore_(std::move(sessionStore)) {
     }
 
-    void AuthController::registerRoutes(crow::SimpleApp& app) {
-        CROW_ROUTE(app, "/api/auth/register")
+    crow::Blueprint AuthController::getBlueprint() {
+        crow::Blueprint bp("api/auth");
+
+        CROW_BP_ROUTE(bp, "/register")
             .methods(crow::HTTPMethod::POST)
             ([this](const crow::request& req) {
                 return this->registerUser(req);
         });
 
-        CROW_ROUTE(app, "/api/auth/login")
+        CROW_BP_ROUTE(bp, "/login")
             .methods(crow::HTTPMethod::POST)
             ([this](const crow::request& req) {
                 return this->loginUser(req);
         });
 
-        CROW_ROUTE(app, "/api/auth/logout")
+        CROW_BP_ROUTE(bp, "/logout")
             .methods(crow::HTTPMethod::POST)
             ([this](const crow::request& req) {
                 return this->logoutUser(req);
         });
 
-        CROW_ROUTE(app, "/api/auth/user")
+        CROW_BP_ROUTE(bp, "/user")
             .methods(crow::HTTPMethod::DELETE)
             ([this](const crow::request& req) {
                 return this->deleteUser(req);
         });
 
-        CROW_ROUTE(app, "/api/auth/user")
+        CROW_BP_ROUTE(bp, "/user")
             .methods("PATCH"_method)
             ([this](const crow::request& req) {
                 return this->updateUser(req);
         });
+
+        return bp;
     }
 
     crow::response AuthController::registerUser(const crow::request& req) {
@@ -64,12 +69,12 @@ namespace tracker_api {
 
             auto userUuid = authService.registerUser(registerRequest.email, registerRequest.password);
             if (!userUuid) {
-                return crow::response(400, "User already exists or registration failed");
+                return responses::badRequest("User already exists or registration failed");
             }
 
             std::string sid = sessionStore_->createSession(*userUuid, kSessionTtlSeconds);
 
-            crow::response res(201);
+            crow::response res(crow::status::CREATED);
             res.add_header("Set-Cookie",
                 tracker_session::cookie::buildSetCookie(
                     kCookieName, sid, kSessionTtlSeconds,
@@ -85,7 +90,7 @@ namespace tracker_api {
             return res;
         }
         catch (const std::exception& e) {
-            return crow::response(400, "Invalid request: " + std::string(e.what()));
+            return responses::badRequest(e.what());
         }
     }
 
@@ -96,12 +101,12 @@ namespace tracker_api {
 
             auto userUuid = authService.loginUser(loginRequest.email, loginRequest.password);
             if (!userUuid) {
-                return crow::response(401, "Invalid credentials");
+                return responses::unauthorized("Invalid credentials");
             }
 
             std::string sid = sessionStore_->createSession(*userUuid, kSessionTtlSeconds);
 
-            crow::response res(200);
+            crow::response res(crow::status::OK);
             res.add_header("Set-Cookie",
                 tracker_session::cookie::buildSetCookie(
                     kCookieName, sid, kSessionTtlSeconds,
@@ -114,7 +119,7 @@ namespace tracker_api {
             return res;
         }
         catch (const std::exception& e) {
-            return crow::response(400, "Invalid request: " + std::string(e.what()));
+            return responses::badRequest(e.what());
         }
     }
 
@@ -125,7 +130,7 @@ namespace tracker_api {
                 sessionStore_->destroySession(*sid);
             }
 
-            crow::response res(200);
+            crow::response res(crow::status::OK);
             res.add_header("Set-Cookie",
                 tracker_session::cookie::buildDeleteCookie(
                     kCookieName, /*httpOnly=*/true, /*secure=*/kCookieSecure, kSameSite, "/"
@@ -137,7 +142,7 @@ namespace tracker_api {
             return res;
         }
         catch (const std::exception& e) {
-            return crow::response(500, "Internal server error: " + std::string(e.what()));
+            return responses::internalError(e.what());
         }
     }
 
@@ -145,12 +150,12 @@ namespace tracker_api {
         try {
             auto userUuid = AuthMiddleware::getUserUuidFromCookie(req);
             if (!userUuid) {
-                return crow::response(401, "Unauthorized");
+                return responses::unauthorized();
             }
 
             auto body = crow::json::load(req.body);
             if (!body) {
-                return crow::response(400, "Invalid JSON");
+                return responses::badRequest(responses::messages::INVALID_JSON);
             }
 
             std::optional<std::string> email;
@@ -165,7 +170,7 @@ namespace tracker_api {
             }
 
             if (!email.has_value() && !password.has_value()) {
-                return crow::response(400, "At least one field must be provided");
+                return responses::badRequest("At least one field must be provided");
             }
 
             if (email.has_value()) {
@@ -186,7 +191,7 @@ namespace tracker_api {
 
             auto updated = userRepo.getByUUID(*userUuid);
             if (!updated) {
-                return crow::response(404, "User not found");
+                return responses::notFound("User not found");
             }
 
             crow::json::wvalue response;
@@ -194,10 +199,10 @@ namespace tracker_api {
             response["email"] = updated->email;
             response["message"] = "User updated successfully";
 
-            return crow::response(200, response);
+            return crow::response(crow::status::OK, response);
         }
         catch (const std::exception& e) {
-            return crow::response(500, "Internal server error: " + std::string(e.what()));
+            return responses::internalError(e.what());
         }
     }
 
@@ -205,7 +210,7 @@ namespace tracker_api {
         try {
             auto userUuid = AuthMiddleware::getUserUuidFromCookie(req);
             if (!userUuid) {
-                return crow::response(401, "Unauthorized");
+                return responses::unauthorized();
             }
 
             UserRepository userRepo(authService.getConnection());
@@ -225,7 +230,7 @@ namespace tracker_api {
             return res;
         }
         catch (const std::exception& e) {
-            return crow::response(500, "Internal server error: " + std::string(e.what()));
+            return responses::internalError(e.what());
         }
     }
 

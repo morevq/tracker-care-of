@@ -14,6 +14,6 @@ namespace tracker_api {
 		crow::response deletePatient(const crow::request& req, int id);
 	public:
 		PatientController(PatientRepository& patientRepo);
-		void registerRoutes(crow::SimpleApp& app);
+		crow::Blueprint getBlueprint();
 	};
 }

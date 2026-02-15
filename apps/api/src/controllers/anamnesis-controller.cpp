@@ -1,5 +1,6 @@
 #include "controllers/anamnesis-controller.h"
 #include "middleware/auth-middleware.h"
+#include <tracker_common/http-responses.h>
 #include <nlohmann/json.hpp>
 
 #ifdef DELETE
@@ -13,46 +14,50 @@ namespace tracker_api {
     AnamnesisController::AnamnesisController(AnamnesisRepository& anamnesisRepo, PatientRepository& patientRepo)
         : anamnesisRepo(anamnesisRepo), patientRepo(patientRepo) {}
 
-    void AnamnesisController::registerRoutes(crow::SimpleApp& app) {
-        CROW_ROUTE(app, "/api/anamnesis/<int>")
+    crow::Blueprint AnamnesisController::getBlueprint() {
+        crow::Blueprint bp("api/anamnesis");
+        
+        CROW_BP_ROUTE(bp, "/<int>")
             .methods(crow::HTTPMethod::GET)
             ([this](const crow::request& req, int patientId) {
                 return this->getAnamnesisData(req, patientId);
         });
 
-        CROW_ROUTE(app, "/api/anamnesis")
+        CROW_BP_ROUTE(bp, "/")
             .methods(crow::HTTPMethod::POST)
             ([this](const crow::request& req) {
                 return this->createAnamnesis(req);
         });
 
-        CROW_ROUTE(app, "/api/anamnesis/<int>")
+        CROW_BP_ROUTE(bp, "/<int>")
             .methods(crow::HTTPMethod::DELETE)
             ([this](const crow::request& req, int id) {
                 return this->deleteAnamnesis(req, id);
         });
 
-        CROW_ROUTE(app, "/api/anamnesis/<int>")
+        CROW_BP_ROUTE(bp, "/<int>")
             .methods("PATCH"_method)
             ([this](const crow::request& req, int id) {
                 return updateAnamnesis(req, id);
         });
+
+        return bp;
     }
 
     crow::response AnamnesisController::getAnamnesisData(const crow::request& req, int patientId) {
         try {
             auto userUuid = AuthMiddleware::getUserUuidFromCookie(req);
             if (!userUuid) {
-                return crow::response(401, "Unauthorized");
+                return responses::unauthorized();
             }
 
             auto patient = patientRepo.getByID(patientId);
             if (!patient) {
-                return crow::response(404, "Patient not found");
+                return responses::notFound("Patient not found");
             }
 
             if (patient->user_uuid != *userUuid) {
-                return crow::response(403, "Forbidden: Access denied");
+                return responses::forbidden();
             }
 
             auto anamnesisRecords = anamnesisRepo.getByPatientId(patientId);
@@ -67,10 +72,10 @@ namespace tracker_api {
                 });
             }
 
-            return crow::response(200, json(response).dump());
+            return crow::response(crow::status::OK, json(response).dump());
         }
         catch (const std::exception& e) {
-            return crow::response(500, "Internal server error: " + std::string(e.what()));
+            return responses::internalError(e.what());
         }
     }
 
@@ -78,7 +83,7 @@ namespace tracker_api {
         try {
             auto userUuid = AuthMiddleware::getUserUuidFromCookie(req);
             if (!userUuid) {
-                return crow::response(401, "Unauthorized");
+                return responses::unauthorized();
             }
 
             auto requestData = json::parse(req.body);
@@ -90,19 +95,19 @@ namespace tracker_api {
 
             auto patient = patientRepo.getByID(patientId);
             if (!patient) {
-                return crow::response(404, "Patient not found");
+                return responses::notFound("Patient not found");
             }
 
             if (patient->user_uuid != *userUuid) {
-                return crow::response(403, "Forbidden: Access denied");
+                return responses::forbidden();
             }
 
             anamnesisRepo.createAnamnesis(patientId, description, photoUrl);
 
-            return crow::response(201, "Anamnesis created successfully");
+            return responses::created("Anamnesis created successfully");
         }
         catch (const std::exception& e) {
-            return crow::response(400, "Invalid request: " + std::string(e.what()));
+            return responses::badRequest(e.what());
         }
     }
 
@@ -110,22 +115,22 @@ namespace tracker_api {
         try {
             auto userUuid = AuthMiddleware::getUserUuidFromCookie(req);
             if (!userUuid) {
-                return crow::response(401, "Unauthorized");
+                return responses::unauthorized();
             }
 
             auto anamnesis = anamnesisRepo.getByID(id);
             if (!anamnesis.has_value()) {
-                return crow::response(404, "Anamnesis not found");
+                return responses::notFound("Anamnesis not found");
             }
 
             auto patient = patientRepo.getByID(anamnesis->id_patient);
             if (!patient || patient->user_uuid != *userUuid) {
-                return crow::response(403, "Forbidden: Access denied");
+                return responses::forbidden();
             }
 
             auto body = crow::json::load(req.body);
             if (!body) {
-                return crow::response(400, "Invalid JSON");
+                return responses::badRequest(responses::messages::INVALID_JSON);
             }
 
             std::optional<std::string> description;
@@ -145,7 +150,7 @@ namespace tracker_api {
             }
 
             if (!description.has_value() && !date.has_value() && !photo_url.has_value()) {
-                return crow::response(400, "At least one field must be provided");
+                return responses::badRequest("At least one field must be provided");
             }
 
             anamnesisRepo.updateAnamnesis(id, description, date, photo_url);
@@ -160,10 +165,10 @@ namespace tracker_api {
             }
             response["created_at"] = updated->created_at;
 
-            return crow::response(200, response);
+            return crow::response(crow::status::OK, response);
         }
         catch (const std::exception& e) {
-            return crow::response(500, "Internal server error: " + std::string(e.what()));
+            return responses::internalError(e.what());
         }
     }
 
@@ -171,14 +176,14 @@ namespace tracker_api {
         try {
             auto userUuid = AuthMiddleware::getUserUuidFromCookie(req);
             if (!userUuid) {
-                return crow::response(401, "Unauthorized");
+                return responses::unauthorized();
             }
 
             anamnesisRepo.deleteAnamnesis(id);
             return crow::response(204);
         }
         catch (const std::exception& e) {
-            return crow::response(500, "Internal server error: " + std::string(e.what()));
+            return responses::internalError(e.what());
         }
     }
 

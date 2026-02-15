@@ -1,5 +1,6 @@
 #include "controllers/water-controller.h"
 #include "middleware/auth-middleware.h"
+#include <tracker_common/http-responses.h>
 #include <nlohmann/json.hpp>
 
 #ifdef DELETE
@@ -13,37 +14,41 @@ namespace tracker_api {
 	WaterController::WaterController(WaterRepository& waterRepo, PatientRepository& patientRepo)
 		: waterRepo(waterRepo), patientRepo(patientRepo) {}
 
-	void WaterController::registerRoutes(crow::SimpleApp& app) {
-		CROW_ROUTE(app, "/api/water")
+	crow::Blueprint WaterController::getBlueprint() {
+		crow::Blueprint bp("api/water");
+
+		CROW_BP_ROUTE(bp, "/")
 			.methods(crow::HTTPMethod::GET)
 			([this](const crow::request& req) {
 			return this->getWaterData(req);
 		});
 
-		CROW_ROUTE(app, "/api/water/<int>")
+		CROW_BP_ROUTE(bp, "/<int>")
 			.methods(crow::HTTPMethod::GET)
 			([this](const crow::request& req, int id) {
 			return this->getWaterByPatientId(req, id);
 		});
 
-		CROW_ROUTE(app, "/api/water")
+		CROW_BP_ROUTE(bp, "/")
 			.methods(crow::HTTPMethod::POST)
 			([this](const crow::request& req) {
 			return this->addWater(req);
 		});
 
-		CROW_ROUTE(app, "/api/water/<int>")
+		CROW_BP_ROUTE(bp, "/<int>")
 			.methods(crow::HTTPMethod::DELETE)
 			([this](const crow::request& req, int id) {
 			return this->deleteWater(req, id);
 		});
+
+		return bp;
 	}
 
 	crow::response WaterController::getWaterData(const crow::request& req) {
 		try {
 			auto userUuid = AuthMiddleware::getUserUuidFromCookie(req);
 			if (!userUuid) {
-				return crow::response(401, "Unauthorized");
+				return responses::unauthorized();
 			}
 
 			auto waterRecords = waterRepo.getByUserUUID(*userUuid);
@@ -58,10 +63,10 @@ namespace tracker_api {
 				});
 			}
 
-			return crow::response(200, json(response).dump());
+			return responses::ok(json(response).dump());
 		}
 		catch (const std::exception& e) {
-			return crow::response(500, "Internal server error: " + std::string(e.what()));
+			return responses::internalError(e.what());
 		}
 	}
 
@@ -69,21 +74,21 @@ namespace tracker_api {
 		try {
 			auto userUuid = AuthMiddleware::getUserUuidFromCookie(req);
 			if (!userUuid) {
-				return crow::response(401, "Unauthorized");
+				return responses::unauthorized();
 			}
 
 			auto patient = patientRepo.getByID(id);
 			if (!patient) {
-				return crow::response(404, "Patient not found");
+				return responses::notFound("Patient not found");
 			}
 
 			if (patient->user_uuid != *userUuid) {
-				return crow::response(403, "Forbidden: Access denied");
+				return responses::forbidden();
 			}
 
 			auto water = waterRepo.getByPatientID(id);
 			if (!water) {
-				return crow::response(404, "Water record not found");
+				return responses::notFound("Water record not found");
 			}
 
 			WaterResponse response{
@@ -93,10 +98,10 @@ namespace tracker_api {
 				water->frequencyMeasure
 			};
 
-			return crow::response(200, json(response).dump());
+			return responses::ok(json(response).dump());
 		}
 		catch (const std::exception& e) {
-			return crow::response(500, "Internal server error: " + std::string(e.what()));
+			return responses::internalError(e.what());
 		}
 	}
 
@@ -104,16 +109,16 @@ namespace tracker_api {
 		try {
 			auto userUuid = AuthMiddleware::getUserUuidFromCookie(req);
 			if (!userUuid) {
-				return crow::response(401, "Unauthorized");
+				return responses::unauthorized();
 			}
 
 			auto body = crow::json::load(req.body);
 			if (!body) {
-				return crow::response(400, "Invalid JSON");
+				return responses::badRequest(responses::messages::INVALID_JSON);
 			}
 
 			if (!body.has("patient_id") || !body.has("last_water")) {
-				return crow::response(400, "Missing required fields: patient_id and last_water");
+				return responses::badRequest("Missing required fields: patient_id and last_water");
 			}
 
 			int patientId = body["patient_id"].i();
@@ -121,19 +126,19 @@ namespace tracker_api {
 
 			auto patient = patientRepo.getByID(patientId);
 			if (!patient || patient->user_uuid != *userUuid) {
-				return crow::response(403, "Forbidden: Access denied");
+				return responses::forbidden();
 			}
 
 			bool success = waterRepo.addWater(patientId, lastWater);
 			
 			if (!success) {
-				return crow::response(400, "Failed to add water record. Check that the date is not earlier than patient birth date.");
+				return responses::badRequest("Failed to add water record. Check that the date is not earlier than patient birth date.");
 			}
 
-			return crow::response(201, "Water record created successfully");
+			return responses::created("Water record created successfully");
 		}
 		catch (const std::exception& e) {
-			return crow::response(500, "Internal server error: " + std::string(e.what()));
+			return responses::internalError(e.what());
 		}
 	}
 
@@ -141,19 +146,19 @@ namespace tracker_api {
 		try {
 			auto userUuid = AuthMiddleware::getUserUuidFromCookie(req);
 			if (!userUuid) {
-				return crow::response(401, "Unauthorized");
+				return responses::unauthorized();
 			}
 
 			auto patient = patientRepo.getByID(id);
 			if (!patient || patient->user_uuid != *userUuid) {
-				return crow::response(403, "Forbidden: Access denied");
+				return responses::forbidden();
 			}
 
 			waterRepo.deleteWater(id);
-			return crow::response(204);
+			return responses::noContent();
 		}
 		catch (const std::exception& e) {
-			return crow::response(500, "Internal server error: " + std::string(e.what()));
+			return responses::internalError(e.what());
 		}
 	}
 

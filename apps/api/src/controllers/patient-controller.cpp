@@ -1,5 +1,6 @@
 #include "controllers/patient-controller.h"
 #include "middleware/auth-middleware.h"
+#include <tracker_common/http-responses.h>
 #include <nlohmann/json.hpp>
 
 #ifdef DELETE
@@ -12,43 +13,47 @@ namespace tracker_api {
 
 	PatientController::PatientController(PatientRepository& patientRepo) : patientRepo(patientRepo) {}
 
-	void PatientController::registerRoutes(crow::SimpleApp& app) {
-		CROW_ROUTE(app, "/api/patients")
+	crow::Blueprint PatientController::getBlueprint() {
+		crow::Blueprint bp("api/patients");
+
+		CROW_BP_ROUTE(bp, "/")
 			.methods(crow::HTTPMethod::POST)
 			([this](const crow::request& req) {
 				return this->createPatient(req);
 		});
 
-		CROW_ROUTE(app, "/api/patients")
+		CROW_BP_ROUTE(bp, "/")
 			.methods(crow::HTTPMethod::GET)
 			([this](const crow::request& req) {
 				return this->getPatients(req);
 		});
 
-		CROW_ROUTE(app, "/api/patients/<int>")
+		CROW_BP_ROUTE(bp, "/<int>")
 			.methods(crow::HTTPMethod::GET)
 			([this](const crow::request& req, int id) {
 				return this->getPatientById(req, id);
 		});
 
-		CROW_ROUTE(app, "/api/patients/<int>")
+		CROW_BP_ROUTE(bp, "/<int>")
 			.methods(crow::HTTPMethod::DELETE)
 			([this](const crow::request& req, int id) {
 				return this->deletePatient(req, id);
 		});
 
-		CROW_ROUTE(app, "/api/patients/<int>")
+		CROW_BP_ROUTE(bp, "/<int>")
 			.methods("PATCH"_method)
 			([this](const crow::request& req, int id) {
 				return updatePatient(req, id);
 		});
+
+		return bp;
 	}
 
 	crow::response PatientController::createPatient(const crow::request& req) {
 		try {
 			auto userUuid = AuthMiddleware::getUserUuidFromCookie(req);
 			if (!userUuid) {
-				return crow::response(401, "Unauthorized");
+				return responses::unauthorized();
 			}
 
 			auto requestData = json::parse(req.body);
@@ -56,10 +61,10 @@ namespace tracker_api {
 
 			patientRepo.createPatient(*userUuid, createReq.name, createReq.birth_date);
 			
-			return crow::response(201, "Patient created successfully");
+			return responses::created("Patient created successfully");
 		}
 		catch (const std::exception& e) {
-			return crow::response(400, "Invalid request: " + std::string(e.what()));
+			return responses::badRequest(e.what());
 		}
 	}
 
@@ -67,7 +72,7 @@ namespace tracker_api {
 		try {
 			auto userUuid = AuthMiddleware::getUserUuidFromCookie(req);
 			if (!userUuid) {
-				return crow::response(400, "Unauthorized");
+				return responses::unauthorized();
 			}
 
 			std::vector<Patient> patients = patientRepo.getByUserUUID(*userUuid);
@@ -81,10 +86,10 @@ namespace tracker_api {
 				});
 			}
 
-			return crow::response(200, json(response).dump());
+			return responses::ok(json(response).dump());
 		}
 		catch (const std::exception& e) {
-			return crow::response(500, "Internal server error: " + std::string(e.what()));
+			return responses::internalError(e.what());
 		}
 	}
 
@@ -92,17 +97,17 @@ namespace tracker_api {
 		try {
 			auto userUuid = AuthMiddleware::getUserUuidFromCookie(req);
 			if (!userUuid) {
-				return crow::response(401, "Unauthorized");
+				return responses::unauthorized();
 			}
 
 			auto patient = patientRepo.getByID(id);
 
 			if (!patient) {
-				return crow::response(404, "Patient not found");
+				return responses::notFound("Patient not found");
 			}
 
 			if (patient->user_uuid != *userUuid) {
-				return crow::response(403, "Forbidden: Access denied");
+				return responses::forbidden();
 			}
 
 			PatientResponse response{
@@ -111,10 +116,10 @@ namespace tracker_api {
 				patient->birth_date
 			};
 
-			return crow::response(200, json(response).dump());
+			return responses::ok(json(response).dump());
 		}
 		catch (const std::exception& e) {
-			return crow::response(500, "Internal server error: " + std::string(e.what()));
+			return responses::internalError(e.what());
 		}
 	}
 
@@ -122,21 +127,21 @@ namespace tracker_api {
 		try {
 			auto userUuid = AuthMiddleware::getUserUuidFromCookie(req);
 			if (!userUuid) {
-				return crow::response(401, "Unauthorized");
+				return responses::unauthorized();
 			}
 
 			auto patient = patientRepo.getByID(id);
 			if (!patient.has_value()) {
-				return crow::response(404, "Patient not found");
+				return responses::notFound("Patient not found");
 			}
 
 			if (patient->user_uuid != *userUuid) {
-				return crow::response(403, "Forbidden: Access denied");
+				return responses::forbidden();
 			}
 
 			auto body = crow::json::load(req.body);
 			if (!body) {
-				return crow::response(400, "Invalid JSON");
+				return responses::badRequest(responses::messages::INVALID_JSON);
 			}
 
 			std::optional<std::string> name;
@@ -151,7 +156,7 @@ namespace tracker_api {
 			}
 
 			if (!name.has_value() && !birth_date.has_value()) {
-				return crow::response(400, "At least one field must be provided");
+				return responses::badRequest("At least one field must be provided");
 			}
 
 			patientRepo.updatePatient(id, name, birth_date);
@@ -164,10 +169,10 @@ namespace tracker_api {
 				response["birth_date"] = *updated->birth_date;
 			}
 
-			return crow::response(200, response);
+			return responses::ok(std::move(response));
 		}
 		catch (const std::exception& e) {
-			return crow::response(500, "Internal server error: " + std::string(e.what()));
+			return responses::internalError(e.what());
 		}
 	}
 
@@ -176,19 +181,19 @@ namespace tracker_api {
 		try {
 			auto userUuid = AuthMiddleware::getUserUuidFromCookie(req);
 			if (!userUuid) {
-				return crow::response(401, "Unauthorized");
+				return responses::unauthorized();
 			}
 
 			auto patient = patientRepo.getByID(id);
 			if (!patient || patient->user_uuid != *userUuid) {
-				return crow::response(403, "Forbidden: Access denied");
+				return responses::forbidden();
 			}
 
 			patientRepo.deletePatient(id);
-			return crow::response(204);
+			return responses::noContent();
 		}
 		catch (const std::exception& e) {
-			return crow::response(500, "Internal server error: " + std::string(e.what()));
+			return responses::internalError(e.what());
 		}
 	}
 }

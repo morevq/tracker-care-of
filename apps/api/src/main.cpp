@@ -65,16 +65,23 @@ int main() {
 
         crow::SimpleApp app;
 
-        authController.registerRoutes(app);
-        patientController.registerRoutes(app);
-        waterController.registerRoutes(app);
-        anamnesisController.registerRoutes(app);
+        auto authBp = authController.getBlueprint();
+        app.register_blueprint(authBp);
+
+        auto patientBp = patientController.getBlueprint();
+        app.register_blueprint(patientBp);
+
+        auto waterBp = waterController.getBlueprint();
+        app.register_blueprint(waterBp);
+
+        auto anamnesisBp = anamnesisController.getBlueprint();
+        app.register_blueprint(anamnesisBp);
 
         CROW_ROUTE(app, "/swagger.json")
             ([]() {
             std::ifstream file("apps/api/swagger.json");
             if (!file.is_open()) {
-                return crow::response(500, "Swagger spec not found");
+                return crow::response(crow::status::INTERNAL_SERVER_ERROR, "Swagger spec not found");
             }
             std::string content((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>());
             crow::response res(content);
