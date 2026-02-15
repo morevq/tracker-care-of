@@ -10,16 +10,16 @@ namespace tracker_api {
 	private:
 		WaterRepository& waterRepo;
 		PatientRepository& patientRepo;
+		crow::Blueprint bp_;
 
+		void setupRoutes();
 		crow::response getWaterData(const crow::request& req);
 		crow::response getWaterByPatientId(const crow::request& req, int id);
 		crow::response addWater(const crow::request& req);
 		crow::response deleteWater(const crow::request& req, int id);
 
 	public:
-		WaterController(WaterRepository& waterRepo, PatientRepository& patientRepo);
-
-		crow::Blueprint getBlueprint();
+		WaterController(WaterRepository& waterRepo, PatientRepository& patientRepo, crow::SimpleApp& app);
 	};
 
 }

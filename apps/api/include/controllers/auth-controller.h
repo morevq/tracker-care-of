@@ -14,7 +14,9 @@ namespace tracker_api {
     private:
         AuthService& authService;
         std::shared_ptr<tracker_session::SessionStore> sessionStore_;
+        crow::Blueprint bp_;
 
+        void setupRoutes();
         crow::response registerUser(const crow::request& req);
         crow::response loginUser(const crow::request& req);
         crow::response logoutUser(const crow::request& req);
@@ -23,9 +25,8 @@ namespace tracker_api {
 
     public:
         AuthController(AuthService& authService,
-            std::shared_ptr<tracker_session::SessionStore> sessionStore);
-
-        crow::Blueprint getBlueprint();
+            std::shared_ptr<tracker_session::SessionStore> sessionStore,
+            crow::SimpleApp& app);
     };
 
 } 

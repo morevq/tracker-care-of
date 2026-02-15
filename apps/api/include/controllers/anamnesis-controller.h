@@ -10,16 +10,16 @@ namespace tracker_api {
     private:
         AnamnesisRepository& anamnesisRepo;
         PatientRepository& patientRepo;
+        crow::Blueprint bp_;
 
+        void setupRoutes();
         crow::response getAnamnesisData(const crow::request& req, int patientId);
         crow::response createAnamnesis(const crow::request& req);
         crow::response updateAnamnesis(const crow::request& req, int id);
         crow::response deleteAnamnesis(const crow::request& req, int id);
 
     public:
-        AnamnesisController(AnamnesisRepository& anamnesisRepo, PatientRepository& patientRepo);
-
-        crow::Blueprint getBlueprint();
+        AnamnesisController(AnamnesisRepository& anamnesisRepo, PatientRepository& patientRepo, crow::SimpleApp& app);
     };
 
 }

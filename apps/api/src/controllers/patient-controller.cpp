@@ -11,42 +11,43 @@ using json = nlohmann::json;
 
 namespace tracker_api {
 
-	PatientController::PatientController(PatientRepository& patientRepo) : patientRepo(patientRepo) {}
+	PatientController::PatientController(PatientRepository& patientRepo, crow::SimpleApp& app) 
+		: patientRepo(patientRepo), bp_("api/patients") {
+		setupRoutes();
+		app.register_blueprint(bp_);
+	}
 
-	crow::Blueprint PatientController::getBlueprint() {
-		crow::Blueprint bp("api/patients");
+	void PatientController::setupRoutes() {
 
-		CROW_BP_ROUTE(bp, "/")
+		CROW_BP_ROUTE(bp_, "/")
 			.methods(crow::HTTPMethod::POST)
 			([this](const crow::request& req) {
 				return this->createPatient(req);
 		});
 
-		CROW_BP_ROUTE(bp, "/")
+		CROW_BP_ROUTE(bp_, "/")
 			.methods(crow::HTTPMethod::GET)
 			([this](const crow::request& req) {
 				return this->getPatients(req);
 		});
 
-		CROW_BP_ROUTE(bp, "/<int>")
+		CROW_BP_ROUTE(bp_, "/<int>")
 			.methods(crow::HTTPMethod::GET)
 			([this](const crow::request& req, int id) {
 				return this->getPatientById(req, id);
 		});
 
-		CROW_BP_ROUTE(bp, "/<int>")
+		CROW_BP_ROUTE(bp_, "/<int>")
 			.methods(crow::HTTPMethod::DELETE)
 			([this](const crow::request& req, int id) {
 				return this->deletePatient(req, id);
 		});
 
-		CROW_BP_ROUTE(bp, "/<int>")
+		CROW_BP_ROUTE(bp_, "/<int>")
 			.methods("PATCH"_method)
 			([this](const crow::request& req, int id) {
 				return updatePatient(req, id);
 		});
-
-		return bp;
 	}
 
 	crow::response PatientController::createPatient(const crow::request& req) {

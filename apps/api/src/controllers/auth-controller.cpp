@@ -22,44 +22,44 @@ namespace tracker_api {
     static constexpr const char* kCookieName = "__Host-session";
 
     AuthController::AuthController(AuthService& authService,
-        std::shared_ptr<tracker_session::SessionStore> sessionStore)
-        : authService(authService), sessionStore_(std::move(sessionStore)) {
+        std::shared_ptr<tracker_session::SessionStore> sessionStore,
+        crow::SimpleApp& app)
+        : authService(authService), sessionStore_(std::move(sessionStore)), bp_("api/auth") {
+        setupRoutes();
+        app.register_blueprint(bp_);
     }
 
-    crow::Blueprint AuthController::getBlueprint() {
-        crow::Blueprint bp("api/auth");
+    void AuthController::setupRoutes() {
 
-        CROW_BP_ROUTE(bp, "/register")
+        CROW_BP_ROUTE(bp_, "/register")
             .methods(crow::HTTPMethod::POST)
             ([this](const crow::request& req) {
                 return this->registerUser(req);
         });
 
-        CROW_BP_ROUTE(bp, "/login")
+        CROW_BP_ROUTE(bp_, "/login")
             .methods(crow::HTTPMethod::POST)
             ([this](const crow::request& req) {
                 return this->loginUser(req);
         });
 
-        CROW_BP_ROUTE(bp, "/logout")
+        CROW_BP_ROUTE(bp_, "/logout")
             .methods(crow::HTTPMethod::POST)
             ([this](const crow::request& req) {
                 return this->logoutUser(req);
         });
 
-        CROW_BP_ROUTE(bp, "/user")
+        CROW_BP_ROUTE(bp_, "/user")
             .methods(crow::HTTPMethod::DELETE)
             ([this](const crow::request& req) {
                 return this->deleteUser(req);
         });
 
-        CROW_BP_ROUTE(bp, "/user")
+        CROW_BP_ROUTE(bp_, "/user")
             .methods("PATCH"_method)
             ([this](const crow::request& req) {
                 return this->updateUser(req);
         });
-
-        return bp;
     }
 
     crow::response AuthController::registerUser(const crow::request& req) {

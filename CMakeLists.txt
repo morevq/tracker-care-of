@@ -95,7 +95,7 @@ elseif(TARGET redis++::redis++_shared)
 elseif(TARGET redis++::redis++)
     set(REDISPP_TARGET redis++::redis++)
 else()
-    message(FATAL_ERROR "redis++ package найден, но CMake target не обнаружен (ожидались redis++::redis++_static / redis++::redis++_shared / redis++::redis++)")
+    message(FATAL_ERROR "redis++ package пїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅ CMake target пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ redis++::redis++_static / redis++::redis++_shared / redis++::redis++)")
 endif()
 
 target_link_libraries(tracker_session
@@ -130,10 +130,13 @@ target_link_libraries(tracker_cli
 
 add_executable(tracker_api
     apps/api/src/main.cpp
+    apps/api/src/config.cpp
+    apps/api/src/api-server.cpp
     apps/api/src/controllers/anamnesis-controller.cpp
     apps/api/src/controllers/auth-controller.cpp
     apps/api/src/controllers/patient-controller.cpp
     apps/api/src/controllers/water-controller.cpp
+    apps/api/src/controllers/swagger-controller.cpp
     apps/api/src/middleware/auth-middleware.cpp
 )
 target_include_directories(tracker_api
