@@ -7,7 +7,7 @@ namespace tracker_api {
 	class PatientController {
 	private:
 		PatientRepository& patientRepo;
-		crow::Blueprint bp_;
+		crow::SimpleApp& app_;
 
 		void setupRoutes();
 		crow::response createPatient(const crow::request& req);
