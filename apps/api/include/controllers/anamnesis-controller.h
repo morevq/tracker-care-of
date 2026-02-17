@@ -10,7 +10,7 @@ namespace tracker_api {
     private:
         AnamnesisRepository& anamnesisRepo;
         PatientRepository& patientRepo;
-        crow::Blueprint bp_;
+        crow::SimpleApp& app_;
 
         void setupRoutes();
         crow::response getAnamnesisData(const crow::request& req, int patientId);

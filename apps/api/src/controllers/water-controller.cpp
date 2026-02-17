@@ -12,32 +12,31 @@ using json = nlohmann::json;
 namespace tracker_api {
 
 	WaterController::WaterController(WaterRepository& waterRepo, PatientRepository& patientRepo, crow::SimpleApp& app)
-		: waterRepo(waterRepo), patientRepo(patientRepo), bp_("api/water") {
+		: waterRepo(waterRepo), patientRepo(patientRepo), app_(app) {
 		setupRoutes();
-		app.register_blueprint(bp_);
 	}
 
 	void WaterController::setupRoutes() {
 
-		CROW_BP_ROUTE(bp_, "/")
+		CROW_ROUTE(app_, "/api/water")
 			.methods(crow::HTTPMethod::GET)
 			([this](const crow::request& req) {
 			return this->getWaterData(req);
 		});
 
-		CROW_BP_ROUTE(bp_, "/<int>")
+		CROW_ROUTE(app_, "/api/water/<int>")
 			.methods(crow::HTTPMethod::GET)
 			([this](const crow::request& req, int id) {
 			return this->getWaterByPatientId(req, id);
 		});
 
-		CROW_BP_ROUTE(bp_, "/")
+		CROW_ROUTE(app_, "/api/water")
 			.methods(crow::HTTPMethod::POST)
 			([this](const crow::request& req) {
 			return this->addWater(req);
 		});
 
-		CROW_BP_ROUTE(bp_, "/<int>")
+		CROW_ROUTE(app_, "/api/water/<int>")
 			.methods(crow::HTTPMethod::DELETE)
 			([this](const crow::request& req, int id) {
 			return this->deleteWater(req, id);

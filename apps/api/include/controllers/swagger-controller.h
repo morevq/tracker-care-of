@@ -6,7 +6,7 @@ namespace tracker_api {
 
     class SwaggerController {
     private:
-        crow::Blueprint bp_;
+        crow::SimpleApp& app_;
         void setupRoutes();
     public:
         SwaggerController(crow::SimpleApp& app);

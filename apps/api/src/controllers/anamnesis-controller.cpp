@@ -12,32 +12,31 @@ using json = nlohmann::json;
 namespace tracker_api {
 
     AnamnesisController::AnamnesisController(AnamnesisRepository& anamnesisRepo, PatientRepository& patientRepo, crow::SimpleApp& app)
-        : anamnesisRepo(anamnesisRepo), patientRepo(patientRepo), bp_("api/anamnesis") {
+        : anamnesisRepo(anamnesisRepo), patientRepo(patientRepo), app_(app) {
         setupRoutes();
-        app.register_blueprint(bp_);
     }
 
     void AnamnesisController::setupRoutes() {
-        
-        CROW_BP_ROUTE(bp_, "/<int>")
+
+        CROW_ROUTE(app_, "/api/anamnesis/<int>")
             .methods(crow::HTTPMethod::GET)
             ([this](const crow::request& req, int patientId) {
                 return this->getAnamnesisData(req, patientId);
         });
 
-        CROW_BP_ROUTE(bp_, "/")
+        CROW_ROUTE(app_, "/api/anamnesis")
             .methods(crow::HTTPMethod::POST)
             ([this](const crow::request& req) {
                 return this->createAnamnesis(req);
         });
 
-        CROW_BP_ROUTE(bp_, "/<int>")
+        CROW_ROUTE(app_, "/api/anamnesis/<int>")
             .methods(crow::HTTPMethod::DELETE)
             ([this](const crow::request& req, int id) {
                 return this->deleteAnamnesis(req, id);
         });
 
-        CROW_BP_ROUTE(bp_, "/<int>")
+        CROW_ROUTE(app_, "/api/anamnesis/<int>")
             .methods("PATCH"_method)
             ([this](const crow::request& req, int id) {
                 return updateAnamnesis(req, id);
