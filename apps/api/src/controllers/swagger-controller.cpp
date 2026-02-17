@@ -3,13 +3,12 @@
 #include <sstream>
 
 namespace tracker_api {
-    SwaggerController::SwaggerController(crow::SimpleApp& app) : bp_("") {
+    SwaggerController::SwaggerController(crow::SimpleApp& app) : app_(app) {
         setupRoutes();
-        app.register_blueprint(bp_);
     }
     void SwaggerController::setupRoutes() {
 
-        CROW_BP_ROUTE(bp_, "/swagger.json")
+        CROW_ROUTE(app_, "/swagger.json")
         ([]() {
             std::ifstream file("apps/api/swagger.json");
             if (!file.is_open()) {
@@ -21,7 +20,7 @@ namespace tracker_api {
             return res;
         });
 
-        CROW_BP_ROUTE(bp_, "/swagger")
+        CROW_ROUTE(app_, "/swagger")
         ([]() {
             return R"(<!DOCTYPE html>
                 <html>
