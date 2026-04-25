@@ -18,7 +18,7 @@ std::vector<Water> WaterRepository::getByUserUUID(const std::string& user_uuid) 
            FROM patient p
            LEFT JOIN water w ON w.id_patient = p.id_patient
            LEFT JOIN water_frequency wf ON wf.id_patient = p.id_patient
-           WHERE p.user_uuid = $1
+           WHERE p.user_uuid = $1::uuid
            ORDER BY w.last_water DESC NULLS LAST)",
         user_uuid
     );

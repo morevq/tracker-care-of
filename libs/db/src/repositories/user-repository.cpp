@@ -10,7 +10,7 @@ UserRepository::UserRepository(pg::ClusterPtr cluster)
 std::optional<User> UserRepository::getByEmail(const std::string& email) {
     auto result = cluster_->Execute(
         pg::ClusterHostType::kSlave,
-        "SELECT user_uuid, email, password_hash "
+        "SELECT user_uuid::text, email, password_hash "
         "FROM users WHERE email = $1 AND is_deleted = FALSE",
         email
     );
@@ -30,8 +30,8 @@ std::optional<User> UserRepository::getByEmail(const std::string& email) {
 std::optional<User> UserRepository::getByUUID(const std::string& user_uuid) {
     auto result = cluster_->Execute(
         pg::ClusterHostType::kSlave,
-        "SELECT user_uuid, email, password_hash "
-        "FROM users WHERE user_uuid = $1 AND is_deleted = FALSE",
+        "SELECT user_uuid::text, email, password_hash "
+        "FROM users WHERE user_uuid = $1::uuid AND is_deleted = FALSE",
         user_uuid
     );
 
@@ -52,7 +52,7 @@ std::string UserRepository::createUser(const std::string& email,
     auto result = cluster_->Execute(
         pg::ClusterHostType::kMaster,
         "INSERT INTO users (email, password_hash) VALUES ($1, $2) "
-        "RETURNING user_uuid",
+        "RETURNING user_uuid::text",
         email, passwordHash
     );
 
@@ -74,7 +74,7 @@ void UserRepository::updateUser(const std::string& user_uuid,
         "UPDATE users SET "
         "  email         = COALESCE($2, email), "
         "  password_hash = COALESCE($3, password_hash) "
-        "WHERE user_uuid = $1 AND is_deleted = FALSE",
+        "WHERE user_uuid = $1::uuid AND is_deleted = FALSE",
         user_uuid, email, password_hash
     );
 }
@@ -82,7 +82,7 @@ void UserRepository::updateUser(const std::string& user_uuid,
 void UserRepository::deleteUser(const std::string& user_uuid) {
     cluster_->Execute(
         pg::ClusterHostType::kMaster,
-        "UPDATE users SET is_deleted = TRUE WHERE user_uuid = $1",
+        "UPDATE users SET is_deleted = TRUE WHERE user_uuid = $1::uuid",
         user_uuid
     );
 }

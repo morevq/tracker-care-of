@@ -10,8 +10,8 @@ PatientRepository::PatientRepository(pg::ClusterPtr cluster)
 std::vector<Patient> PatientRepository::getByUserUUID(const std::string& user_uuid) {
     auto result = cluster_->Execute(
         pg::ClusterHostType::kSlave,
-        "SELECT id_patient, user_uuid, name, birth_date "
-        "FROM patient WHERE user_uuid = $1 AND is_deleted = FALSE",
+        "SELECT id_patient, user_uuid::text, name, birth_date "
+        "FROM patient WHERE user_uuid = $1::uuid AND is_deleted = FALSE",
         user_uuid
     );
 
@@ -31,7 +31,7 @@ std::vector<Patient> PatientRepository::getByUserUUID(const std::string& user_uu
 std::optional<Patient> PatientRepository::getByID(int id_patient) {
     auto result = cluster_->Execute(
         pg::ClusterHostType::kSlave,
-        "SELECT id_patient, user_uuid, name, birth_date "
+        "SELECT id_patient, user_uuid::text, name, birth_date "
         "FROM patient WHERE id_patient = $1 AND is_deleted = FALSE",
         id_patient
     );
@@ -54,7 +54,7 @@ void PatientRepository::createPatient(const std::string& user_uuid,
                                       std::optional<std::string> birth_date) {
     cluster_->Execute(
         pg::ClusterHostType::kMaster,
-        "INSERT INTO patient (user_uuid, name, birth_date) VALUES ($1, $2, $3)",
+        "INSERT INTO patient (user_uuid, name, birth_date) VALUES ($1::uuid, $2, $3)",
         user_uuid, name, birth_date
     );
 }
