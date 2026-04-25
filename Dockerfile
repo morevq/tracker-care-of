@@ -34,12 +34,28 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y \
     libssl3 \
+    libpq5 \
+    libhiredis0.14 \
+    libboost-atomic1.74.0 \
+    libboost-filesystem1.74.0 \
+    libboost-iostreams1.74.0 \
+    libboost-program-options1.74.0 \
+    libboost-stacktrace1.74.0 \
+    libc-ares2 \
+    libev4 \
+    libnghttp2-14 \
+    libcrypto++8 \
+    libjemalloc2 \
+    libre2-9 \
+    libcctz2 \
+    libyaml-cpp0.7 \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=builder /app/build/tracker_api ./tracker_api
 COPY --from=builder /app/apps/api/static_config.yaml ./static_config.yaml
 COPY --from=builder /app/apps/api/dynamic_config_vars.yaml ./dynamic_config_vars.yaml
+COPY --from=builder /app/apps/api/secdist.json /etc/tracker/secdist.json
 
 EXPOSE 8080
 

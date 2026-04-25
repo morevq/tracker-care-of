@@ -1,0 +1,13 @@
+{
+  "redis_settings": {
+    "tracker-sessions": {
+      "password": "",
+      "sentinels": [
+        { "host": "redis", "port": 6379 }
+      ],
+      "shards": [
+        { "name": "shard0" }
+      ]
+    }
+  }
+}

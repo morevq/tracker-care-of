@@ -26,8 +26,6 @@ set(USERVER_FEATURE_REDIS        ON  CACHE BOOL "" FORCE)
 set(USERVER_FEATURE_GRPC         OFF CACHE BOOL "" FORCE)
 set(USERVER_FEATURE_MONGODB      OFF CACHE BOOL "" FORCE)
 set(USERVER_FEATURE_CLICKHOUSE   OFF CACHE BOOL "" FORCE)
-# Отключаем патч libpq: он вызывает try_compile с CURL::libcurl,
-# который недоступен в изолированном контексте при совместном использовании vcpkg.
 set(USERVER_FEATURE_PATCH_LIBPQ  OFF CACHE BOOL "" FORCE)
 
 FetchContent_MakeAvailable(userver)
@@ -72,7 +70,6 @@ target_link_libraries(tracker_core
 )
 
 add_library(tracker_db STATIC
-    libs/db/src/postgres-db.cpp
     libs/db/src/repositories/anamnesis-repository.cpp
     libs/db/src/repositories/patient-repository.cpp
     libs/db/src/repositories/user-repository.cpp
@@ -131,10 +128,15 @@ target_link_libraries(tracker_cli
 add_executable(tracker_api
     apps/api/src/main.cpp
     apps/api/src/component-list.cpp
-    apps/api/src/controllers/auth-controller.cpp
-    apps/api/src/controllers/patient-controller.cpp
-    apps/api/src/controllers/anamnesis-controller.cpp
-    apps/api/src/controllers/water-controller.cpp
+    apps/api/src/components/session-store-component.cpp
+    apps/api/src/handlers/authenticated-handler.cpp
+    apps/api/src/handlers/auth-handler.cpp
+    apps/api/src/handlers/patient-list-handler.cpp
+    apps/api/src/handlers/patient-by-id-handler.cpp
+    apps/api/src/handlers/anamnesis-list-handler.cpp
+    apps/api/src/handlers/anamnesis-by-id-handler.cpp
+    apps/api/src/handlers/water-list-handler.cpp
+    apps/api/src/handlers/water-by-id-handler.cpp
 )
 target_include_directories(tracker_api
     PRIVATE

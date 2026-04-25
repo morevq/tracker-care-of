@@ -1,12 +1,17 @@
 #include "tracker_session/redis-session-store.h"
 #include "tracker_session/secure-random.h"
 
+#include <chrono>
 #include <stdexcept>
+#include <utility>
+
+namespace redis = userver::storages::redis;
 
 namespace tracker_session {
 
-    RedisSessionStore::RedisSessionStore(const std::string& redisUri)
-        : redis_(redisUri) {
+    RedisSessionStore::RedisSessionStore(
+        std::shared_ptr<userver::storages::redis::Client> client)
+        : client_(std::move(client)) {
     }
 
     std::string RedisSessionStore::makeKey(const std::string& sid) {
@@ -19,9 +24,8 @@ namespace tracker_session {
         std::string sid = secureRandomHex(32);
         std::string key = makeKey(sid);
 
-        redis_.hset(key, "user_uuid", userUuid);
-
-        redis_.expire(key, ttlSeconds);
+        client_->Set(key, userUuid, redis::CommandControl{}).Get();
+        client_->Expire(key, std::chrono::seconds(ttlSeconds), redis::CommandControl{}).Get();
 
         return sid;
     }
@@ -29,15 +33,14 @@ namespace tracker_session {
     std::optional<std::string> RedisSessionStore::resolveUserUuid(const std::string& sid) {
         if (sid.empty()) return std::nullopt;
 
-        std::string key = makeKey(sid);
-        auto val = redis_.hget(key, "user_uuid");
-        if (!val) return std::nullopt;
-        return *val;
+        auto reply = client_->Get(makeKey(sid), redis::CommandControl{}).Get();
+        if (!reply) return std::nullopt;
+        return *reply;
     }
 
     void RedisSessionStore::destroySession(const std::string& sid) {
         if (sid.empty()) return;
-        redis_.del(makeKey(sid));
+        client_->Del(makeKey(sid), redis::CommandControl{}).Get();
     }
 
 }

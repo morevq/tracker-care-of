@@ -1,17 +1,8 @@
-#include <iostream>
-#include "config.h"
-#include "api-server.h"
+#include "component-list.hpp"
 
-int main() {
-    try {
-        auto& config = tracker_api::Config::getInstance();
-        tracker_api::ApiServer server(config);
-        server.run();
-    }
-    catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-        return 1;
-    }
+#include <userver/utils/daemon_run.hpp>
 
-    return 0;
+int main(int argc, char* argv[]) {
+    auto component_list = MakeComponentList();
+    return userver::utils::DaemonMain(argc, argv, component_list);
 }

@@ -1,204 +1,85 @@
-#include <iostream>
 #include "tracker_db/repositories/patient-repository.h"
 
-PatientRepository::PatientRepository(db_utils::PGconnPtr connection) : connection(connection) {}
+#include <userver/storages/postgres/io/optional.hpp>
+
+namespace pg = userver::storages::postgres;
+
+PatientRepository::PatientRepository(pg::ClusterPtr cluster)
+    : cluster_(std::move(cluster)) {}
 
 std::vector<Patient> PatientRepository::getByUserUUID(const std::string& user_uuid) {
-	std::vector<Patient> patients;
+    auto result = cluster_->Execute(
+        pg::ClusterHostType::kSlave,
+        "SELECT id_patient, user_uuid, name, birth_date "
+        "FROM patient WHERE user_uuid = $1 AND is_deleted = FALSE",
+        user_uuid
+    );
 
-	const char* query =
-		"SELECT id_patient, user_uuid, name, birth_date "
-		"FROM patient WHERE user_uuid = $1 AND is_deleted = FALSE;";
-
-	const char* params[] = {
-		user_uuid.c_str()
-	};
-
-	auto res = db_utils::make_pgresult(PQexecParams(
-		connection.get(),
-		query,
-		1,
-		nullptr,
-		params,
-		nullptr,
-		nullptr,
-		0
-	));
-
-	if (PQresultStatus(res.get()) != PGRES_TUPLES_OK) {
-		std::cerr << "Error executing query: " << PQerrorMessage(connection.get()) << std::endl;
-		return patients;
-	}
-
-	int rows = PQntuples(res.get());
-	for (int i = 0; i < rows; ++i) {
-		int col_id = PQfnumber(res.get(), "id_patient");
-		int col_user = PQfnumber(res.get(), "user_uuid");
-		int col_name = PQfnumber(res.get(), "name");
-		int col_birth_date = PQfnumber(res.get(), "birth_date");
-
-		Patient patient;
-
-		patient.id_patient = std::stoi(PQgetvalue(res.get(), i, col_id));
-		patient.user_uuid = PQgetvalue(res.get(), i, col_user);
-		patient.name = PQgetvalue(res.get(), i, col_name);
-		patient.birth_date = PQgetvalue(res.get(), i, col_birth_date);
-		
-		char* birth_date_cstr = PQgetvalue(res.get(), i, col_birth_date);
-		if (birth_date_cstr && birth_date_cstr[0] != '\0') {
-			patient.birth_date = std::string(birth_date_cstr);
-		} else {
-			patient.birth_date = std::nullopt;
-		}
-
-		patients.push_back(patient);
-	}
-	return patients;
+    std::vector<Patient> patients;
+    patients.reserve(result.Size());
+    for (auto row : result) {
+        Patient p;
+        p.id_patient = row["id_patient"].As<int>();
+        p.user_uuid  = row["user_uuid"].As<std::string>();
+        p.name       = row["name"].As<std::string>();
+        p.birth_date = row["birth_date"].As<std::optional<std::string>>();
+        patients.push_back(std::move(p));
+    }
+    return patients;
 }
 
 std::optional<Patient> PatientRepository::getByID(int id_patient) {
-	const char* query =
-		"SELECT id_patient, user_uuid, name, birth_date "
-		"FROM patient WHERE id_patient = $1 AND is_deleted = FALSE;";
+    auto result = cluster_->Execute(
+        pg::ClusterHostType::kSlave,
+        "SELECT id_patient, user_uuid, name, birth_date "
+        "FROM patient WHERE id_patient = $1 AND is_deleted = FALSE",
+        id_patient
+    );
 
-	std::string id_str = std::to_string(id_patient);
-	const char* params[] = { id_str.c_str() };
+    if (result.IsEmpty()) {
+        return std::nullopt;
+    }
 
-	auto res = db_utils::make_pgresult(PQexecParams(
-		connection.get(),
-		query,
-		1,
-		nullptr,
-		params,
-		nullptr,
-		nullptr,
-		0
-	));
-
-	if (PQresultStatus(res.get()) != PGRES_TUPLES_OK) {
-		std::cerr << "Error executing query: " << PQerrorMessage(connection.get()) << std::endl;
-		return std::nullopt;
-	}
-
-	int rows = PQntuples(res.get());
-	if (rows == 0) {
-		return std::nullopt;
-	}
-
-	int col_id = PQfnumber(res.get(), "id_patient");
-	int col_user = PQfnumber(res.get(), "user_uuid");
-	int col_name = PQfnumber(res.get(), "name");
-	int col_birth_date = PQfnumber(res.get(), "birth_date");
-
-	Patient patient;
-	patient.id_patient = std::stoi(PQgetvalue(res.get(), 0, col_id));
-	patient.user_uuid = PQgetvalue(res.get(), 0, col_user);
-	patient.name = PQgetvalue(res.get(), 0, col_name);
-
-	char* birth_date_cstr = PQgetvalue(res.get(), 0, col_birth_date);
-	if (birth_date_cstr && birth_date_cstr[0] != '\0') {
-		patient.birth_date = std::string(birth_date_cstr);
-	} else {
-		patient.birth_date = std::nullopt;
-	}
-
-	return patient;
+    auto row = result[0];
+    Patient p;
+    p.id_patient = row["id_patient"].As<int>();
+    p.user_uuid  = row["user_uuid"].As<std::string>();
+    p.name       = row["name"].As<std::string>();
+    p.birth_date = row["birth_date"].As<std::optional<std::string>>();
+    return p;
 }
 
-void PatientRepository::createPatient(const std::string& user_uuid, const std::string& name, std::optional<std::string> birth_date) {
-	const char* params[3] = { user_uuid.c_str(), name.c_str(), nullptr };
-	if (birth_date.has_value()) {
-		params[2] = birth_date->c_str();
-	}
+void PatientRepository::createPatient(const std::string& user_uuid,
+                                      const std::string& name,
+                                      std::optional<std::string> birth_date) {
+    cluster_->Execute(
+        pg::ClusterHostType::kMaster,
+        "INSERT INTO patient (user_uuid, name, birth_date) VALUES ($1, $2, $3)",
+        user_uuid, name, birth_date
+    );
+}
 
-	const char* query =
-		"INSERT INTO patient (user_uuid, name, birth_date) VALUES ($1, $2, $3);";
+void PatientRepository::updatePatient(int id_patient,
+                                      std::optional<std::string> name,
+                                      std::optional<std::string> birth_date) {
+    if (!name.has_value() && !birth_date.has_value()) {
+        return;
+    }
 
-	auto res = db_utils::make_pgresult(PQexecParams(
-		connection.get(),
-		query,
-		3,
-		nullptr,
-		params,
-		nullptr,
-		nullptr,
-		0
-	));
-
-	if (PQresultStatus(res.get()) != PGRES_COMMAND_OK) {
-		std::cerr << "Error inserting patient: " << PQerrorMessage(connection.get()) << std::endl;
-	}
+    cluster_->Execute(
+        pg::ClusterHostType::kMaster,
+        "UPDATE patient SET "
+        "  name       = COALESCE($2, name), "
+        "  birth_date = COALESCE($3, birth_date) "
+        "WHERE id_patient = $1 AND is_deleted = FALSE",
+        id_patient, name, birth_date
+    );
 }
 
 void PatientRepository::deletePatient(int id_patient) {
-	std::string id_str = std::to_string(id_patient);
-	const char* params[] = { id_str.c_str() };
-
-	const char* query =
-		"UPDATE patient SET is_deleted = TRUE WHERE id_patient = $1;";
-
-	auto res = db_utils::make_pgresult(PQexecParams(
-		connection.get(),
-		query,
-		1,
-		nullptr,
-		params,
-		nullptr,
-		nullptr,
-		0
-	));
-
-	if (PQresultStatus(res.get()) != PGRES_COMMAND_OK) {
-		std::cerr << "Error deleting patient: " << PQerrorMessage(connection.get()) << std::endl;
-	}
-}
-
-
-void PatientRepository::updatePatient(int id_patient, const std::optional<std::string> name, std::optional<std::string> birth_date) {
-	std::vector<std::string> setClauses;
-	std::vector<const char*> params;
-	int paramIndex = 1;
-
-	if (name.has_value()) {
-		setClauses.push_back("name = $" + std::to_string(paramIndex++));
-		params.push_back(name->c_str());
-	}
-
-	if (birth_date.has_value()) {
-		setClauses.push_back("birth_date = $" + std::to_string(paramIndex++));
-		params.push_back(birth_date->c_str());
-	}
-
-	if (setClauses.empty()) {
-		std::cerr << "No fields to update for patient ID " << id_patient << std::endl;
-		return;
-	}
-
-	std::string id_str = std::to_string(id_patient);
-	params.push_back(id_str.c_str());
-
-	std::string query = "UPDATE patient SET " + std::string(setClauses[0]);
-
-	for (size_t i = 1; i < setClauses.size(); ++i) {
-		query += ", " + setClauses[i];
-	}
-
-	query += " WHERE id_patient = $" + std::to_string(paramIndex) + ";";
-
-	PGresult* res = PQexecParams(
-		connection.get(),
-		query.c_str(),
-		static_cast<int>(params.size()),
-		nullptr,
-		params.data(),
-		nullptr,
-		nullptr,
-		0
-	);
-
-	if (PQresultStatus(res) != PGRES_COMMAND_OK) {
-		std::cerr << "Error updating patient: " << PQerrorMessage(connection.get()) << std::endl;
-	}
-
-	PQclear(res);
+    cluster_->Execute(
+        pg::ClusterHostType::kMaster,
+        "UPDATE patient SET is_deleted = TRUE WHERE id_patient = $1",
+        id_patient
+    );
 }

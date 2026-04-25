@@ -4,5 +4,8 @@ vcpkg_installed/
 .git/
 .vscode/
 .env
+.env.example
 .vs/
+Dockerfile
+.dockerignore
 

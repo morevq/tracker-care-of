@@ -76,11 +76,12 @@ services:
     environment:
       - DATABASE_URL=postgresql://${DB_USER}:${DB_PASSWORD}@db:5432/${DB_NAME}
       - API_PORT=8080
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=
     env_file:
       - .env
+    volumes:
+      - ./apps/api/static_config.yaml:/app/static_config.yaml:ro
+      - ./apps/api/dynamic_config_vars.yaml:/app/dynamic_config_vars.yaml:ro
+      - ./apps/api/secdist.json:/etc/tracker/secdist.json:ro
     networks:
       - tracker
     restart: unless-stopped
