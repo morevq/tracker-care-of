@@ -1,80 +1,48 @@
 # Stage 1: Build
-FROM ubuntu:22.04 AS builder
+FROM ghcr.io/userver-framework/ubuntu-22.04-userver-base:latest AS builder
 
-# Disable interactive prompts
-ENV DEBIAN_FRONTEND=noninteractive
+WORKDIR /app
 
-# Install build dependencies
-RUN apt-get update && apt-get install -y \
-    build-essential \
-    git \
-    curl \
-    zip \
-    unzip \
-    tar \
-    pkg-config \
-    ninja-build \
-    python3 \
-    python3-pip \
-    linux-libc-dev \
-    bison \
-    flex \
-    autoconf \
-    automake \
-    libtool \
-    && rm -rf /var/lib/apt/lists/*
-
-# Install modern CMake via pip
-RUN pip3 install cmake --upgrade
-
-# Set up vcpkg
 ENV VCPKG_ROOT=/opt/vcpkg
 ENV PATH="${VCPKG_ROOT}:${PATH}"
+
+RUN apt-get update && apt-get install -y \
+    curl zip unzip tar git \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN git clone https://github.com/microsoft/vcpkg.git ${VCPKG_ROOT} \
     && ${VCPKG_ROOT}/bootstrap-vcpkg.sh
 
-WORKDIR /app
-
-# Copy vcpkg manifest to cache dependencies
+# Copy manifests first — so userver FetchContent layer is cached independently of source changes
 COPY vcpkg.json .
-
-# Install dependencies (Manifest mode)
 RUN vcpkg install
 
-# Copy source code
+# Copy all sources before configure: vcpkg's _add_executable checks file existence at generate time
 COPY . .
 
-# Configure and Build
+# cmake configure — Stage 0 check (downloads & builds userver via FetchContent, heavy but cached)
 RUN cmake -B build -S . \
     -DCMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake \
-    -DCMAKE_BUILD_TYPE=Release \
-    && cmake --build build --config Release --target tracker_api
+    -DCMAKE_BUILD_TYPE=Release
 
-# Stage 2: Runtime (API)
+RUN cmake --build build --target tracker_api -j$(nproc)
+
+# Stage 2: Runtime
 FROM ubuntu:22.04 AS api
 
 WORKDIR /app
 
-# Install runtime dependencies
-# libpq5: for PostgreSQL
-# libcurl4, libssl3: for CPR/network
 RUN apt-get update && apt-get install -y \
-    libpq5 \
-    libcurl4 \
     libssl3 \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
-# Create directory for Swagger UI assets
-RUN mkdir -p apps/api
-
-# Copy artifacts
 COPY --from=builder /app/build/tracker_api ./tracker_api
-COPY --from=builder /app/apps/api/swagger.json ./apps/api/swagger.json
-COPY .env.example .env.example
+COPY --from=builder /app/apps/api/static_config.yaml ./static_config.yaml
+COPY --from=builder /app/apps/api/dynamic_config_vars.yaml ./dynamic_config_vars.yaml
 
-# Expose API port
 EXPOSE 8080
 
-CMD ["./tracker_api"]
+CMD ["./tracker_api", \
+     "--config", "static_config.yaml", \
+     "--config_vars", "dynamic_config_vars.yaml"]
