@@ -16,9 +16,11 @@ namespace tracker_session {
         std::string createSession(const std::string& userUuid, int ttlSeconds) override;
         std::optional<std::string> resolveUserUuid(const std::string& sid) override;
         void destroySession(const std::string& sid) override;
+        void destroyAllSessionsForUser(const std::string& userUuid) override;
 
     private:
-        static std::string makeKey(const std::string& sid);
+        static std::string makeSessionKey(const std::string& sid);
+        static std::string makeUserKey(const std::string& userUuid);
 
         std::shared_ptr<userver::storages::redis::Client> client_;
     };

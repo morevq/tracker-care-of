@@ -8,13 +8,14 @@ removing or renaming a handler in static_config.yaml.
 import pytest
 
 EXPECTED = {
-    "auth-handler":           ("/api/auth/{action}",   {"GET", "POST", "PATCH", "DELETE"}),
-    "patient-handler":        ("/api/patients",        {"GET", "POST"}),
-    "patient-by-id-handler":  ("/api/patients/{id}",   {"GET", "PATCH", "DELETE"}),
-    "anamnesis-handler":      ("/api/anamnesis",       {"POST"}),
-    "anamnesis-by-id-handler":("/api/anamnesis/{id}",  {"GET", "PATCH", "DELETE"}),
-    "water-handler":          ("/api/water",           {"GET", "POST"}),
-    "water-by-id-handler":    ("/api/water/{id}",      {"GET", "DELETE"}),
+    "auth-handler":              ("/api/auth/{action}",                              {"GET", "POST", "PATCH", "DELETE"}),
+    "patient-handler":           ("/api/patients",                                   {"GET", "POST"}),
+    "patient-by-id-handler":     ("/api/patients/{id}",                              {"GET", "PATCH", "DELETE"}),
+    "patient-anamnesis-handler": ("/api/patients/{patient_id}/anamnesis",            {"GET", "POST"}),
+    "anamnesis-by-id-handler":   ("/api/anamnesis/{id}",                             {"GET", "PATCH", "DELETE"}),
+    "patient-water-handler":     ("/api/patients/{patient_id}/water",                {"GET", "POST"}),
+    "water-by-id-handler":       ("/api/water/{id}",                                 {"GET", "DELETE"}),
+    "water-frequency-handler":   ("/api/patients/{patient_id}/water-frequency",      {"GET", "PUT", "DELETE"}),
 }
 
 

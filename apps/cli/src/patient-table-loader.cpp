@@ -1,35 +1,32 @@
 #include "patient-table-loader.h"
 #include "date-utils.h"
-#include <unordered_map>
 
 std::vector<PatientTableRow> loadPatientsTable(ApiClient& apiClient) {
     auto patientsData = apiClient.getPatients();
-    auto waterData = apiClient.getWaterData();
-
-    std::unordered_map<int, ApiClient::WaterDto> waterByPatientId;
-    for (const auto& w : waterData) {
-        waterByPatientId.emplace(w.id, w);
-    }
 
     std::vector<PatientTableRow> tablePatients;
     tablePatients.reserve(patientsData.size());
 
     for (const auto& p : patientsData) {
         Water water{};
+        water.idWater = 0;
         water.idPatient = p.id;
         water.lastWater = "-";
         water.frequency = -1;
         water.frequencyMeasure = "";
 
-        const auto itWater = waterByPatientId.find(p.id);
-        if (itWater != waterByPatientId.end()) {
-            water.idPatient = itWater->second.id;
-            water.lastWater = itWater->second.lastWater;
-            water.frequency = itWater->second.frequency;
-            water.frequencyMeasure = itWater->second.frequencyMeasure;
+        auto waters = apiClient.getWaterForPatient(p.id);
+        if (!waters.empty()) {
+            water.idWater = waters.front().id_water;
+            water.lastWater = waters.front().lastWater;
         }
 
-        std::string ageStr = calculateAge(p.birth_date);    
+        if (auto freq = apiClient.getWaterFrequency(p.id)) {
+            water.frequency = freq->frequency;
+            water.frequencyMeasure = freq->measure;
+        }
+
+        std::string ageStr = calculateAge(p.birth_date);
 
         tablePatients.push_back(PatientTableRow{
             .id_patient = p.id,
@@ -37,7 +34,7 @@ std::vector<PatientTableRow> loadPatientsTable(ApiClient& apiClient) {
             .birth_date = p.birth_date.value_or("-"),
             .age = ageStr,
             .water = water
-            });
+        });
     }
 
     return tablePatients;

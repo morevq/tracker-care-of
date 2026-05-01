@@ -11,19 +11,12 @@ using json = nlohmann::json;
 ApiClient::ApiClient(const std::string& baseUrl) : baseUrl(baseUrl) {}
 
 std::string ApiClient::extractSessionCookie(const cpr::Response& r) {
-    std::cerr << "DEBUG: Status code: " << r.status_code << '\n';
-    
     auto cookies = r.cookies;
-    std::cerr << "DEBUG: Checking CPR parsed cookies...\n";
     for (const auto& cookie : cookies) {
-        std::cerr << "DEBUG: Cookie name: '" << cookie.GetName() << "', value: '" << cookie.GetValue() << "'\n";
         if (cookie.GetName() == "session_uuid") {
-            std::cerr << "DEBUG: Found session cookie via CPR!\n";
             return cookie.GetName() + "=" + cookie.GetValue();
         }
     }
-    
-    std::cerr << "DEBUG: No session cookie found in CPR cookies list\n";
 
     auto findSessionCookieInHeader = [](const std::string& headerValue) {
         constexpr const char* kCookieName = "session_uuid=";
@@ -46,22 +39,17 @@ std::string ApiClient::extractSessionCookie(const cpr::Response& r) {
         return value;
     };
 
-    std::cerr << "DEBUG: Checking Set-Cookie headers...\n";
     for (const auto& headerEntry : r.header) {
-        const auto& key = headerEntry.first;
-        const auto& value = headerEntry.second;
-        if (toLower(key) != "set-cookie") {
+        if (toLower(headerEntry.first) != "set-cookie") {
             continue;
         }
-        auto sessionValue = findSessionCookieInHeader(value);
+        auto sessionValue = findSessionCookieInHeader(headerEntry.second);
         if (!sessionValue.empty()) {
-            std::cerr << "DEBUG: Found session cookie in Set-Cookie header!\n";
             return "session_uuid=" + sessionValue;
         }
     }
 
     if (!r.raw_header.empty()) {
-        std::cerr << "DEBUG: Checking raw headers...\n";
         size_t start = 0;
         while (start < r.raw_header.size()) {
             auto end = r.raw_header.find('\n', start);
@@ -73,13 +61,11 @@ std::string ApiClient::extractSessionCookie(const cpr::Response& r) {
                 line.pop_back();
             }
 
-            auto lowerLine = toLower(line);
             constexpr const char* kHeaderPrefix = "set-cookie:";
-            if (lowerLine.rfind(kHeaderPrefix, 0) == 0) {
+            if (toLower(line).rfind(kHeaderPrefix, 0) == 0) {
                 auto headerValue = line.substr(std::strlen(kHeaderPrefix));
                 auto sessionValue = findSessionCookieInHeader(headerValue);
                 if (!sessionValue.empty()) {
-                    std::cerr << "DEBUG: Found session cookie in raw headers!\n";
                     return "session_uuid=" + sessionValue;
                 }
             }
@@ -91,15 +77,11 @@ std::string ApiClient::extractSessionCookie(const cpr::Response& r) {
         }
     }
 
-    std::cerr << "DEBUG: Response text: " << r.text << '\n';
     return "";
 }
 
 bool ApiClient::registerUser(const std::string& email, const std::string& password) {
-    json body = {
-        {"email", email},
-        {"password", password}
-    };
+    json body = {{"email", email}, {"password", password}};
 
     cpr::Response r = cpr::Post(
         cpr::Url{baseUrl + "/api/auth/register"},
@@ -127,10 +109,7 @@ bool ApiClient::registerUser(const std::string& email, const std::string& passwo
 }
 
 bool ApiClient::loginUser(const std::string& email, const std::string& password) {
-    json body = {
-        {"email", email},
-        {"password", password}
-    };
+    json body = {{"email", email}, {"password", password}};
 
     cpr::Response r = cpr::Post(
         cpr::Url{baseUrl + "/api/auth/login"},
@@ -184,18 +163,18 @@ bool ApiClient::deleteUser() {
 }
 
 std::vector<ApiClient::PatientDto> ApiClient::getPatients() {
-cpr::Response r = cpr::Get(
-    cpr::Url{baseUrl + "/api/patients"},
-    cpr::Header{{"Cookie", sessionCookie}}
-);
+    cpr::Response r = cpr::Get(
+        cpr::Url{baseUrl + "/api/patients"},
+        cpr::Header{{"Cookie", sessionCookie}}
+    );
 
     std::vector<PatientDto> patients;
-    
+
     if (r.status_code == 0 || r.error) {
         std::cerr << "Network error in getPatients: " << r.error.message << '\n';
         return patients;
     }
-    
+
     if (r.status_code == 200) {
         try {
             auto j = json::parse(r.text);
@@ -239,10 +218,10 @@ bool ApiClient::createPatient(const std::string& name, const std::optional<std::
 }
 
 std::optional<ApiClient::PatientDto> ApiClient::getPatientById(int id) {
-cpr::Response r = cpr::Get(
-    cpr::Url{baseUrl + "/api/patients/" + std::to_string(id)},
-    cpr::Header{{"Cookie", sessionCookie}}
-);
+    cpr::Response r = cpr::Get(
+        cpr::Url{baseUrl + "/api/patients/" + std::to_string(id)},
+        cpr::Header{{"Cookie", sessionCookie}}
+    );
 
     if (r.status_code == 0 || r.error) {
         std::cerr << "Network error in getPatientById: " << r.error.message << '\n';
@@ -265,10 +244,10 @@ cpr::Response r = cpr::Get(
 }
 
 bool ApiClient::deletePatient(int id) {
-cpr::Response r = cpr::Delete(
-    cpr::Url{ baseUrl + "/api/patients/" + std::to_string(id) },
-    cpr::Header{ {"Cookie", sessionCookie} }
-);
+    cpr::Response r = cpr::Delete(
+        cpr::Url{ baseUrl + "/api/patients/" + std::to_string(id) },
+        cpr::Header{ {"Cookie", sessionCookie} }
+    );
 
     if (r.status_code == 0 || r.error) {
         std::cerr << "Network error in deletePatient: " << r.error.message << '\n';
@@ -278,42 +257,41 @@ cpr::Response r = cpr::Delete(
     return r.status_code == 204;
 }
 
-std::vector<ApiClient::WaterDto> ApiClient::getWaterData() {
-cpr::Response r = cpr::Get(
-    cpr::Url{baseUrl + "/api/water"},
-    cpr::Header{{"Cookie", sessionCookie}}
-);
+std::vector<ApiClient::WaterDto> ApiClient::getWaterForPatient(int patientId) {
+    cpr::Response r = cpr::Get(
+        cpr::Url{baseUrl + "/api/patients/" + std::to_string(patientId) + "/water"},
+        cpr::Header{{"Cookie", sessionCookie}}
+    );
 
     std::vector<WaterDto> waterRecords;
-    
+
     if (r.status_code == 0 || r.error) {
-        std::cerr << "Network error in getWaterData: " << r.error.message << '\n';
+        std::cerr << "Network error in getWaterForPatient: " << r.error.message << '\n';
         return waterRecords;
     }
-    
+
     if (r.status_code == 200) {
         try {
             auto j = json::parse(r.text);
             for (const auto& item : j) {
                 waterRecords.push_back({
-                    item["id"],
-                    item["lastWater"],
-                    item["frequency"],
-                    item["frequencyMeasure"]
+                    item["id_water"].get<int>(),
+                    item["id_patient"].get<int>(),
+                    item["last_water"].get<std::string>(),
                 });
             }
         } catch (const json::exception& e) {
-            std::cerr << "JSON parsing error in getWaterData: " << e.what() << '\n';
+            std::cerr << "JSON parsing error in getWaterForPatient: " << e.what() << '\n';
         }
     }
     return waterRecords;
 }
 
-bool ApiClient::deleteWater(int id) {
-cpr::Response r = cpr::Delete(
-    cpr::Url{ baseUrl + "/api/water/" + std::to_string(id) },
-    cpr::Header{ {"Cookie", sessionCookie} }
-);
+bool ApiClient::deleteWater(int id_water) {
+    cpr::Response r = cpr::Delete(
+        cpr::Url{ baseUrl + "/api/water/" + std::to_string(id_water) },
+        cpr::Header{ {"Cookie", sessionCookie} }
+    );
 
     if (r.status_code == 0 || r.error) {
         std::cerr << "Network error in deleteWater: " << r.error.message << '\n';
@@ -323,33 +301,58 @@ cpr::Response r = cpr::Delete(
     return r.status_code == 204;
 }
 
+std::optional<ApiClient::WaterFrequencyDto> ApiClient::getWaterFrequency(int patientId) {
+    cpr::Response r = cpr::Get(
+        cpr::Url{baseUrl + "/api/patients/" + std::to_string(patientId) + "/water-frequency"},
+        cpr::Header{{"Cookie", sessionCookie}}
+    );
+
+    if (r.status_code == 0 || r.error) {
+        return std::nullopt;
+    }
+
+    if (r.status_code != 200) {
+        return std::nullopt;
+    }
+
+    try {
+        auto j = json::parse(r.text);
+        return WaterFrequencyDto{
+            j["frequency"].get<int>(),
+            j["frequency_measure"].get<std::string>(),
+        };
+    } catch (const json::exception&) {
+        return std::nullopt;
+    }
+}
+
 std::vector<ApiClient::AnamnesisDto> ApiClient::getAnamnesisByPatient(int patientId) {
-cpr::Response r = cpr::Get(
-    cpr::Url{baseUrl + "/api/anamnesis/" + std::to_string(patientId)},
-    cpr::Header{{"Cookie", sessionCookie}}
-);
+    cpr::Response r = cpr::Get(
+        cpr::Url{baseUrl + "/api/patients/" + std::to_string(patientId) + "/anamnesis"},
+        cpr::Header{{"Cookie", sessionCookie}}
+    );
 
     std::vector<AnamnesisDto> anamnesisRecords;
-    
+
     if (r.status_code == 0 || r.error) {
         std::cerr << "Network error in getAnamnesisByPatient: " << r.error.message << '\n';
         return anamnesisRecords;
     }
-    
+
     if (r.status_code == 200) {
         try {
             auto j = json::parse(r.text);
             for (const auto& item : j) {
-                    if (!item.contains("id") || !item.contains("description") || !item.contains("date")) {
+                if (!item.contains("id") || !item.contains("description") || !item.contains("date")) {
                     std::cerr << "Warning: Skipping anamnesis record with missing fields\n";
                     continue;
                 }
-                
+
                 anamnesisRecords.push_back({
                     item["id"],
                     item["description"],
-                    item.contains("photo_url") && !item["photo_url"].is_null() 
-                        ? std::optional<std::string>(item["photo_url"]) 
+                    item.contains("photo_url") && !item["photo_url"].is_null()
+                        ? std::optional<std::string>(item["photo_url"])
                         : std::nullopt,
                     item["date"]
                 });
@@ -364,13 +367,12 @@ cpr::Response r = cpr::Get(
 
 bool ApiClient::createAnamnesis(int patientId, const std::string& description, const std::optional<std::string>& photo_url) {
     json body = {
-        {"patient_id", patientId},
         {"description", description},
         {"photo_url", photo_url.has_value() ? json(*photo_url) : json(nullptr)}
     };
 
     cpr::Response r = cpr::Post(
-        cpr::Url{baseUrl + "/api/anamnesis"},
+        cpr::Url{baseUrl + "/api/patients/" + std::to_string(patientId) + "/anamnesis"},
         cpr::Header{{"Content-Type", "application/json"}, {"Cookie", sessionCookie}},
         cpr::Body{body.dump()}
     );

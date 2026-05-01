@@ -30,7 +30,7 @@ std::optional<User> UserRepository::getByEmail(const std::string& email) {
 std::optional<User> UserRepository::getByUUID(const std::string& user_uuid) {
     auto result = cluster_->Execute(
         pg::ClusterHostType::kSlave,
-        "SELECT user_uuid::text, email, password_hash "
+        "SELECT user_uuid::text, email, password_hash, created_at::text "
         "FROM users WHERE user_uuid = $1::uuid AND is_deleted = FALSE",
         user_uuid
     );
@@ -44,6 +44,7 @@ std::optional<User> UserRepository::getByUUID(const std::string& user_uuid) {
     user.user_uuid     = row["user_uuid"].As<std::string>();
     user.email         = row["email"].As<std::string>();
     user.password_hash = row["password_hash"].As<std::string>();
+    user.created_at    = row["created_at"].As<std::string>();
     return user;
 }
 

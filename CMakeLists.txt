@@ -144,10 +144,11 @@ if(BUILD_API)
         apps/api/src/handlers/auth-handler.cpp
         apps/api/src/handlers/patient-list-handler.cpp
         apps/api/src/handlers/patient-by-id-handler.cpp
-        apps/api/src/handlers/anamnesis-list-handler.cpp
+        apps/api/src/handlers/patient-anamnesis-handler.cpp
         apps/api/src/handlers/anamnesis-by-id-handler.cpp
-        apps/api/src/handlers/water-list-handler.cpp
+        apps/api/src/handlers/patient-water-handler.cpp
         apps/api/src/handlers/water-by-id-handler.cpp
+        apps/api/src/handlers/water-frequency-handler.cpp
     )
     target_include_directories(tracker_api
         PRIVATE

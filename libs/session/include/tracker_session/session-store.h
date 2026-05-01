@@ -14,6 +14,8 @@ namespace tracker_session {
         virtual std::optional<std::string> resolveUserUuid(const std::string& sid) = 0;
 
         virtual void destroySession(const std::string& sid) = 0;
+
+        virtual void destroyAllSessionsForUser(const std::string& userUuid) = 0;
     };
 
 }

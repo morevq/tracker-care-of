@@ -6,7 +6,6 @@
 
 #include <userver/storages/postgres/component.hpp>
 
-#include "../dto/water-dto.h"
 #include "components/session-store-component.hpp"
 #include "handlers/http-helpers.hpp"
 
@@ -39,9 +38,9 @@ std::string WaterByIdHandler::HandleRequestThrow(
         return http::Unauthorized(request);
     }
 
-    int id = 0;
+    int idWater = 0;
     try {
-        id = std::stoi(request.GetPathArg("id"));
+        idWater = std::stoi(request.GetPathArg("id"));
     } catch (const std::exception&) {
         return http::BadRequest(request, "Invalid id");
     }
@@ -49,9 +48,9 @@ std::string WaterByIdHandler::HandleRequestThrow(
     using Method = userver::server::http::HttpMethod;
     switch (request.GetMethod()) {
         case Method::kGet:
-            return HandleGet(request, id, *userUuid);
+            return HandleGet(request, idWater, *userUuid);
         case Method::kDelete:
-            return HandleDelete(request, id, *userUuid);
+            return HandleDelete(request, idWater, *userUuid);
         default:
             return http::SetStatus(
                 request,
@@ -61,43 +60,47 @@ std::string WaterByIdHandler::HandleRequestThrow(
 }
 
 std::string WaterByIdHandler::HandleGet(
-    const userver::server::http::HttpRequest& request, int patient_id,
+    const userver::server::http::HttpRequest& request, int id_water,
     const std::string& user_uuid) const {
     try {
-        auto patient = patient_repo_.getByID(patient_id);
-        if (!patient) {
-            return http::NotFound(request, "Patient not found");
-        }
-        if (patient->user_uuid != user_uuid) {
-            return http::Forbidden(request);
-        }
-
-        auto water = water_repo_.getByPatientID(patient_id);
+        auto water = water_repo_.getByID(id_water);
         if (!water) {
             return http::NotFound(request, "Water record not found");
         }
 
-        WaterResponse response{water->idPatient, water->lastWater,
-                               water->frequency, water->frequencyMeasure};
+        auto patient = patient_repo_.getByID(water->idPatient);
+        if (!patient || patient->user_uuid != user_uuid) {
+            return http::Forbidden(request);
+        }
 
+        json response = {
+            {"id_water", water->idWater},
+            {"id_patient", water->idPatient},
+            {"last_water", water->lastWater},
+        };
         request.GetHttpResponse().SetHeader(
             std::string_view{"Content-Type"}, std::string{"application/json"});
-        return http::Ok(request, json(response).dump());
+        return http::Ok(request, response.dump());
     } catch (const std::exception& e) {
         return http::InternalError(request, e.what());
     }
 }
 
 std::string WaterByIdHandler::HandleDelete(
-    const userver::server::http::HttpRequest& request, int patient_id,
+    const userver::server::http::HttpRequest& request, int id_water,
     const std::string& user_uuid) const {
     try {
-        auto patient = patient_repo_.getByID(patient_id);
+        auto water = water_repo_.getByID(id_water);
+        if (!water) {
+            return http::NoContent(request);
+        }
+
+        auto patient = patient_repo_.getByID(water->idPatient);
         if (!patient || patient->user_uuid != user_uuid) {
             return http::Forbidden(request);
         }
 
-        water_repo_.deleteWater(patient_id);
+        water_repo_.deleteByID(id_water);
         return http::NoContent(request);
     } catch (const std::exception& e) {
         return http::InternalError(request, e.what());

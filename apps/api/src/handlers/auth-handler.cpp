@@ -65,8 +65,13 @@ std::string AuthHandler::GetRequestBodyForLogging(
     const std::string& request_body) const {
     try {
         auto data = json::parse(request_body);
-        if (data.is_object() && data.contains("password")) {
-            data["password"] = "***";
+        if (data.is_object()) {
+            for (const auto& key :
+                 {"password", "current_password", "new_password"}) {
+                if (data.contains(key)) {
+                    data[key] = "***";
+                }
+            }
         }
         return data.dump();
     } catch (const std::exception&) {
@@ -89,6 +94,12 @@ std::string AuthHandler::HandleRequestThrow(
     }
     if (action == "logout" && method == Method::kPost) {
         return Logout(request);
+    }
+    if (action == "me" && method == Method::kGet) {
+        return Me(request);
+    }
+    if (action == "change-password" && method == Method::kPost) {
+        return ChangePassword(request);
     }
     if (action == "user" && method == Method::kPatch) {
         return UpdateUser(request);
@@ -167,6 +178,77 @@ std::string AuthHandler::Logout(
     }
 }
 
+std::string AuthHandler::Me(
+    const userver::server::http::HttpRequest& request) const {
+    try {
+        auto userUuid = GetCurrentUserUuid(request);
+        if (!userUuid) {
+            return http::Unauthorized(request);
+        }
+
+        UserRepository userRepo(auth_service_.getCluster());
+        auto user = userRepo.getByUUID(*userUuid);
+        if (!user) {
+            return http::NotFound(request, "User not found");
+        }
+
+        SetJsonContentType(request);
+        return http::Ok(
+            request,
+            json(MeResponse{user->user_uuid, user->email, user->created_at})
+                .dump());
+    } catch (const std::exception& e) {
+        return http::InternalError(request, e.what());
+    }
+}
+
+std::string AuthHandler::ChangePassword(
+    const userver::server::http::HttpRequest& request) const {
+    try {
+        auto userUuid = GetCurrentUserUuid(request);
+        if (!userUuid) {
+            return http::Unauthorized(request);
+        }
+
+        auto data = json::parse(request.RequestBody());
+        auto req = data.get<ChangePasswordRequest>();
+
+        if (req.current_password.empty() || req.new_password.empty()) {
+            return http::BadRequest(
+                request,
+                "Both current_password and new_password are required");
+        }
+
+        const auto result = auth_service_.changePassword(
+            *userUuid, req.current_password, req.new_password);
+
+        switch (result) {
+            case AuthService::ChangePasswordResult::kOk: {
+                session_store().destroyAllSessionsForUser(*userUuid);
+
+                const auto newSid = session_store().createSession(
+                    *userUuid, AuthenticatedHandlerBase::kSessionTtlSeconds);
+                SetSessionCookie(request, newSid);
+                SetJsonContentType(request);
+                return http::Ok(
+                    request,
+                    json(AuthResponse{*userUuid, "Password changed"}).dump());
+            }
+            case AuthService::ChangePasswordResult::kWrongCurrentPassword:
+                return http::Unauthorized(
+                    request, "current_password is incorrect");
+            case AuthService::ChangePasswordResult::kInvalidNewPassword:
+                return http::BadRequest(request,
+                                        "new_password must not be blank");
+            case AuthService::ChangePasswordResult::kUserNotFound:
+                return http::NotFound(request, "User not found");
+        }
+        return http::InternalError(request);
+    } catch (const std::exception& e) {
+        return http::BadRequest(request, e.what());
+    }
+}
+
 std::string AuthHandler::UpdateUser(
     const userver::server::http::HttpRequest& request) const {
     try {
@@ -177,37 +259,32 @@ std::string AuthHandler::UpdateUser(
 
         auto body = json::parse(request.RequestBody());
 
+        if (body.contains("password")) {
+            return http::BadRequest(
+                request,
+                "Password change is not allowed here; use POST /api/auth/change-password");
+        }
+
         std::optional<std::string> email;
-        std::optional<std::string> password;
         if (body.contains("email") && !body["email"].is_null()) {
             email = body["email"].get<std::string>();
         }
-        if (body.contains("password") && !body["password"].is_null()) {
-            password = body["password"].get<std::string>();
-        }
 
-        if (!email && !password) {
+        if (!email) {
             return http::BadRequest(request,
                                     "At least one field must be provided");
         }
 
         UserRepository userRepo(auth_service_.getCluster());
 
-        if (email) {
-            auto existing = userRepo.getByEmail(*email);
-            if (existing && existing->user_uuid != *userUuid) {
-                return http::SetStatus(
-                    request, userver::server::http::HttpStatus::kConflict,
-                    "Email already in use");
-            }
+        auto existing = userRepo.getByEmail(*email);
+        if (existing && existing->user_uuid != *userUuid) {
+            return http::SetStatus(
+                request, userver::server::http::HttpStatus::kConflict,
+                "Email already in use");
         }
 
-        std::optional<std::string> passwordHash;
-        if (password) {
-            passwordHash = PasswordHasher::hashPassword(*password);
-        }
-
-        userRepo.updateUser(*userUuid, email, passwordHash);
+        userRepo.updateUser(*userUuid, email, std::nullopt);
 
         auto updated = userRepo.getByUUID(*userUuid);
         if (!updated) {
@@ -238,9 +315,7 @@ std::string AuthHandler::DeleteUser(
         UserRepository userRepo(auth_service_.getCluster());
         userRepo.deleteUser(*userUuid);
 
-        if (auto sid = GetSessionId(request)) {
-            session_store().destroySession(*sid);
-        }
+        session_store().destroyAllSessionsForUser(*userUuid);
 
         ClearSessionCookie(request);
         return http::NoContent(request);

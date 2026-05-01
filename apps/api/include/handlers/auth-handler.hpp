@@ -31,6 +31,8 @@ private:
     std::string Register(const userver::server::http::HttpRequest& request) const;
     std::string Login(const userver::server::http::HttpRequest& request) const;
     std::string Logout(const userver::server::http::HttpRequest& request) const;
+    std::string Me(const userver::server::http::HttpRequest& request) const;
+    std::string ChangePassword(const userver::server::http::HttpRequest& request) const;
     std::string UpdateUser(const userver::server::http::HttpRequest& request) const;
     std::string DeleteUser(const userver::server::http::HttpRequest& request) const;
 
