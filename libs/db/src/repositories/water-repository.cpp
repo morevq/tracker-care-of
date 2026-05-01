@@ -122,7 +122,7 @@ void WaterRepository::deleteByID(int id_water) {
 
 std::optional<WaterFrequency> WaterRepository::getFrequency(int id_patient) {
     auto result = cluster_->Execute(
-        pg::ClusterHostType::kSlave,
+        pg::ClusterHostType::kMaster,
         "SELECT id_patient, frequency, frequency_measure "
         "FROM water_frequency WHERE id_patient = $1",
         id_patient

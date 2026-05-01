@@ -6,6 +6,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include <userver/logging/log.hpp>
 #include <userver/storages/postgres/component.hpp>
 
 #include "components/session-store-component.hpp"
@@ -104,6 +105,8 @@ std::string WaterFrequencyHandler::HandleGet(
             std::string_view{"Content-Type"}, std::string{"application/json"});
         return http::Ok(request, response.dump());
     } catch (const std::exception& e) {
+        LOG_ERROR() << "water-frequency GET failed for patient " << patient_id
+                    << ": " << e.what();
         return http::InternalError(request, e.what());
     }
 }
@@ -135,7 +138,13 @@ std::string WaterFrequencyHandler::HandlePut(
                 "frequency_measure must be one of: days, weeks, hours");
         }
 
-        water_repo_.upsertFrequency(patient_id, frequency, measure);
+        try {
+            water_repo_.upsertFrequency(patient_id, frequency, measure);
+        } catch (const std::exception& e) {
+            LOG_ERROR() << "water-frequency PUT (upsert) failed for patient "
+                        << patient_id << ": " << e.what();
+            return http::InternalError(request, e.what());
+        }
 
         json response = {
             {"frequency", frequency},

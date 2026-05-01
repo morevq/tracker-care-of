@@ -178,3 +178,30 @@ if(BUILD_API)
 else()
     set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT tracker_cli)
 endif()
+
+option(BUILD_CLI_TESTS "Build unit tests for tracker_cli pure-logic helpers" ON)
+
+if(BUILD_CLI_TESTS)
+    find_package(GTest CONFIG REQUIRED)
+    enable_testing()
+    include(GoogleTest)
+
+    add_executable(tracker_cli_tests
+        apps/cli/tests/test_pure_logic.cpp
+        apps/cli/src/date-utils.cpp
+        apps/cli/src/console-utils.cpp
+    )
+    target_include_directories(tracker_cli_tests
+        PRIVATE
+            ${CMAKE_SOURCE_DIR}/apps/cli/include
+    )
+    target_link_libraries(tracker_cli_tests
+        PRIVATE
+            tracker_common
+            tracker_core
+            fmt::fmt
+            GTest::gtest_main
+    )
+
+    gtest_discover_tests(tracker_cli_tests)
+endif()

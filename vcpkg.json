@@ -4,6 +4,7 @@
     "fmt",
     "argon2",
     "nlohmann-json",
-    "cpr"
+    "cpr",
+    "gtest"
   ]
 }
