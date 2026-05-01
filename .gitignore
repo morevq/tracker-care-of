@@ -39,14 +39,9 @@ Makefile
 *.tlog/
 *.lastbuildstate
 
-# Go specific
-# binaries for programs and plugins
-telegram-bot/cmd/bot/bot
-telegram-bot/cmd/bot/bot.exe
-telegram-bot/*.exe
-telegram-bot/*.dll
-telegram-bot/*.so
-telegram-bot/*.dylib
+# Claude Code
+.claude/
+plan.md
 
 # test binary, built with `go test -c`
 *.test

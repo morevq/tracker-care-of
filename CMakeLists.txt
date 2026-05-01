@@ -13,15 +13,28 @@ project(tracker_care_of LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+include(FetchContent)
+
+FetchContent_Declare(
+    userver
+    GIT_REPOSITORY https://github.com/userver-framework/userver.git
+    GIT_TAG        v3.0
+    GIT_SHALLOW    TRUE
+)
+
+set(USERVER_FEATURE_POSTGRESQL   ON  CACHE BOOL "" FORCE)
+set(USERVER_FEATURE_REDIS        ON  CACHE BOOL "" FORCE)
+set(USERVER_FEATURE_GRPC         OFF CACHE BOOL "" FORCE)
+set(USERVER_FEATURE_MONGODB      OFF CACHE BOOL "" FORCE)
+set(USERVER_FEATURE_CLICKHOUSE   OFF CACHE BOOL "" FORCE)
+set(USERVER_FEATURE_PATCH_LIBPQ  OFF CACHE BOOL "" FORCE)
+
+FetchContent_MakeAvailable(userver)
+
 find_package(fmt CONFIG REQUIRED)
-find_package(PostgreSQL REQUIRED)
 find_package(unofficial-argon2 CONFIG REQUIRED)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(cpr CONFIG REQUIRED)
-find_package(Crow CONFIG REQUIRED)
-
-find_package(hiredis CONFIG REQUIRED)
-find_package(redis++ CONFIG REQUIRED)
 
 add_library(tracker_common STATIC
     libs/common/src/env-parser.cpp
@@ -58,7 +71,6 @@ target_link_libraries(tracker_core
 )
 
 add_library(tracker_db STATIC
-    libs/db/src/postgres-db.cpp
     libs/db/src/repositories/anamnesis-repository.cpp
     libs/db/src/repositories/patient-repository.cpp
     libs/db/src/repositories/user-repository.cpp
@@ -73,7 +85,7 @@ target_link_libraries(tracker_db
     PUBLIC
         tracker_core
         tracker_crypto
-        PostgreSQL::PostgreSQL
+        userver::postgresql
 )
 
 add_library(tracker_session STATIC
@@ -85,23 +97,9 @@ target_include_directories(tracker_session
     PUBLIC
         ${CMAKE_SOURCE_DIR}/libs/session/include
 )
-find_package(hiredis CONFIG REQUIRED)
-find_package(redis++ CONFIG REQUIRED)
-
-if(TARGET redis++::redis++_static)
-    set(REDISPP_TARGET redis++::redis++_static)
-elseif(TARGET redis++::redis++_shared)
-    set(REDISPP_TARGET redis++::redis++_shared)
-elseif(TARGET redis++::redis++)
-    set(REDISPP_TARGET redis++::redis++)
-else()
-    message(FATAL_ERROR "redis++ package ������, �� CMake target �� ��������� (��������� redis++::redis++_static / redis++::redis++_shared / redis++::redis++)")
-endif()
-
 target_link_libraries(tracker_session
     PUBLIC
-        ${REDISPP_TARGET}
-        hiredis::hiredis
+        userver::redis
 )
 
 add_executable(tracker_cli
@@ -130,14 +128,16 @@ target_link_libraries(tracker_cli
 
 add_executable(tracker_api
     apps/api/src/main.cpp
-    apps/api/src/config.cpp
-    apps/api/src/api-server.cpp
-    apps/api/src/controllers/anamnesis-controller.cpp
-    apps/api/src/controllers/auth-controller.cpp
-    apps/api/src/controllers/patient-controller.cpp
-    apps/api/src/controllers/water-controller.cpp
-    apps/api/src/controllers/swagger-controller.cpp
-    apps/api/src/middleware/auth-middleware.cpp
+    apps/api/src/component-list.cpp
+    apps/api/src/components/session-store-component.cpp
+    apps/api/src/handlers/authenticated-handler.cpp
+    apps/api/src/handlers/auth-handler.cpp
+    apps/api/src/handlers/patient-list-handler.cpp
+    apps/api/src/handlers/patient-by-id-handler.cpp
+    apps/api/src/handlers/anamnesis-list-handler.cpp
+    apps/api/src/handlers/anamnesis-by-id-handler.cpp
+    apps/api/src/handlers/water-list-handler.cpp
+    apps/api/src/handlers/water-by-id-handler.cpp
 )
 target_include_directories(tracker_api
     PRIVATE
@@ -147,9 +147,11 @@ target_link_libraries(tracker_api
     PRIVATE
         tracker_db
         tracker_session
-        fmt::fmt
+        userver::core
+        userver::postgresql
+        userver::redis
         nlohmann_json::nlohmann_json
-        Crow::Crow
+        fmt::fmt
 )
 
 set_target_properties(tracker_cli PROPERTIES

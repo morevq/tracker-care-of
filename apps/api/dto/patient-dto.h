@@ -17,7 +17,7 @@ namespace tracker_api {
 		std::optional<std::string> birth_date;
 	};
 
-	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(CreatePatientRequest, name, birth_date)
+	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE_WITH_DEFAULT(CreatePatientRequest, name, birth_date)
 	NLOHMANN_DEFINE_TYPE_NON_INTRUSIVE(PatientResponse, id, name, birth_date)
 
 };

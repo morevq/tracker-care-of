@@ -1,19 +1,20 @@
 #pragma once
 
-#include <libpq-fe.h>
 #include <optional>
 #include <string>
-#include <memory>
-#include <tracker_db/db-utils.h>
+
+#include <userver/storages/postgres/cluster.hpp>
 
 class AuthService {
-private:
-	db_utils::PGconnPtr connection;
-
 public:
-	AuthService(db_utils::PGconnPtr connection);
+    explicit AuthService(userver::storages::postgres::ClusterPtr cluster);
 
-	std::optional<std::string> registerUser(const std::string& email, const std::string& password);
-	std::optional<std::string> loginUser(const std::string& email, const std::string& password);
-	db_utils::PGconnPtr getConnection() const;
+    std::optional<std::string> registerUser(const std::string& email,
+                                            const std::string& password);
+    std::optional<std::string> loginUser(const std::string& email,
+                                         const std::string& password);
+    userver::storages::postgres::ClusterPtr getCluster() const;
+
+private:
+    userver::storages::postgres::ClusterPtr cluster_;
 };

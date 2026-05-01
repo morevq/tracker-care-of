@@ -1,8 +1,15 @@
 build/
 out/
 vcpkg_installed/
+tests/
 .git/
 .vscode/
-.env
+.idea/
+.cache/
 .vs/
+.env
+.env.example
+Dockerfile
+.dockerignore
+*.md
 

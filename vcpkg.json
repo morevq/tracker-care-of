@@ -3,11 +3,7 @@
   "dependencies": [
     "fmt",
     "argon2",
-    "libpq",
-    "crow",
     "nlohmann-json",
-    "cpr",
-    "hiredis",
-    "redis-plus-plus"
+    "cpr"
   ]
 }
