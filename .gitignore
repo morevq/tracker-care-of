@@ -18,6 +18,7 @@ vcpkg_installed/
 *.userosscache
 *.sln.docstates
 *.pyc
+*.pyc.*
 
 # CMake generated files
 CMakeCache.txt
