@@ -59,6 +59,21 @@ AuthHandler::AuthHandler(
                             "postgres-db")
                         .GetCluster()) {}
 
+std::string AuthHandler::GetRequestBodyForLogging(
+    const userver::server::http::HttpRequest&,
+    userver::server::request::RequestContext&,
+    const std::string& request_body) const {
+    try {
+        auto data = json::parse(request_body);
+        if (data.is_object() && data.contains("password")) {
+            data["password"] = "***";
+        }
+        return data.dump();
+    } catch (const std::exception&) {
+        return "[redacted]";
+    }
+}
+
 std::string AuthHandler::HandleRequestThrow(
     const userver::server::http::HttpRequest& request,
     userver::server::request::RequestContext&) const {

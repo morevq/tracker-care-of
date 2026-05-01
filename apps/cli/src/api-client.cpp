@@ -107,13 +107,22 @@ bool ApiClient::registerUser(const std::string& email, const std::string& passwo
         cpr::Body{body.dump()}
     );
 
+    if (r.status_code == 0 || r.error) {
+        std::cerr << "Network error: " << r.error.message << '\n';
+        return false;
+    }
+
     if (r.status_code == 201) {
         std::string cookie = extractSessionCookie(r);
         if (!cookie.empty()) {
             sessionCookie = cookie;
             return true;
         }
+        std::cerr << "Registration succeeded but session cookie is missing\n";
+        return false;
     }
+
+    std::cerr << "Registration failed (" << r.status_code << "): " << r.text << '\n';
     return false;
 }
 
@@ -129,17 +138,22 @@ bool ApiClient::loginUser(const std::string& email, const std::string& password)
         cpr::Body{body.dump()}
     );
 
+    if (r.status_code == 0 || r.error) {
+        std::cerr << "Network error: " << r.error.message << '\n';
+        return false;
+    }
+
     if (r.status_code == 200) {
         std::string cookie = extractSessionCookie(r);
         if (!cookie.empty()) {
             sessionCookie = cookie;
             return true;
         }
-    }
-    else if (r.status_code == 0 || r.error) {
-        std::cerr << "Network error: " << r.error.message << '\n';
+        std::cerr << "Login succeeded but session cookie is missing\n";
         return false;
     }
+
+    std::cerr << "Login failed (" << r.status_code << "): " << r.text << '\n';
     return false;
 }
 
@@ -189,8 +203,7 @@ cpr::Response r = cpr::Get(
                 patients.push_back({
                     item["id"],
                     item["name"],
-                    item["birth_date"].is_null() ? std::nullopt : std::optional<std::string>(item["birth_date"]),
-                    item["created_at"]
+                    item["birth_date"].is_null() ? std::nullopt : std::optional<std::string>(item["birth_date"])
                 });
             }
         } catch (const json::exception& e) {
@@ -212,7 +225,17 @@ bool ApiClient::createPatient(const std::string& name, const std::optional<std::
         cpr::Body{body.dump()}
     );
 
-    return r.status_code == 201;
+    if (r.status_code == 0 || r.error) {
+        std::cerr << "Network error in createPatient: " << r.error.message << '\n';
+        return false;
+    }
+
+    if (r.status_code != 201) {
+        std::cerr << "Failed to create patient (" << r.status_code << "): " << r.text << '\n';
+        return false;
+    }
+
+    return true;
 }
 
 std::optional<ApiClient::PatientDto> ApiClient::getPatientById(int id) {
@@ -232,8 +255,7 @@ cpr::Response r = cpr::Get(
             return PatientDto{
                 j["id"],
                 j["name"],
-                j["birth_date"].is_null() ? std::nullopt : std::optional<std::string>(j["birth_date"]),
-                j["created_at"]
+                j["birth_date"].is_null() ? std::nullopt : std::optional<std::string>(j["birth_date"])
             };
         } catch (const json::exception& e) {
             std::cerr << "JSON parsing error in getPatientById: " << e.what() << '\n';

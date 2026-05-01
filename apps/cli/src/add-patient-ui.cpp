@@ -43,5 +43,10 @@ bool addPatientUI(ApiClient& apiClient) {
         birthOpt = birth;
     }
 
-    return apiClient.createPatient(name, birthOpt);
+    bool ok = apiClient.createPatient(name, birthOpt);
+    if (!ok) {
+        std::cout << "Press Enter to continue...";
+        std::cin.get();
+    }
+    return ok;
 }

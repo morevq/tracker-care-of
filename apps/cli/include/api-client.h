@@ -20,7 +20,6 @@ struct ApiClient {
         int id;
         std::string name;
         std::optional<std::string> birth_date;
-        std::string created_at;
     };
     std::vector<PatientDto> getPatients();
     bool createPatient(const std::string& name, const std::optional<std::string>& birth_date);

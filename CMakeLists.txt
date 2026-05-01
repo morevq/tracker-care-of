@@ -13,23 +13,30 @@ project(tracker_care_of LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-include(FetchContent)
+option(BUILD_API "Build the userver-based API server" ON)
+if(WIN32)
+    set(BUILD_API OFF CACHE BOOL "Disabled by default on Windows (userver requires WSL/Linux)" FORCE)
+endif()
 
-FetchContent_Declare(
-    userver
-    GIT_REPOSITORY https://github.com/userver-framework/userver.git
-    GIT_TAG        v3.0
-    GIT_SHALLOW    TRUE
-)
+if(BUILD_API)
+    include(FetchContent)
 
-set(USERVER_FEATURE_POSTGRESQL   ON  CACHE BOOL "" FORCE)
-set(USERVER_FEATURE_REDIS        ON  CACHE BOOL "" FORCE)
-set(USERVER_FEATURE_GRPC         OFF CACHE BOOL "" FORCE)
-set(USERVER_FEATURE_MONGODB      OFF CACHE BOOL "" FORCE)
-set(USERVER_FEATURE_CLICKHOUSE   OFF CACHE BOOL "" FORCE)
-set(USERVER_FEATURE_PATCH_LIBPQ  OFF CACHE BOOL "" FORCE)
+    FetchContent_Declare(
+        userver
+        GIT_REPOSITORY https://github.com/userver-framework/userver.git
+        GIT_TAG        v3.0
+        GIT_SHALLOW    TRUE
+    )
 
-FetchContent_MakeAvailable(userver)
+    set(USERVER_FEATURE_POSTGRESQL   ON  CACHE BOOL "" FORCE)
+    set(USERVER_FEATURE_REDIS        ON  CACHE BOOL "" FORCE)
+    set(USERVER_FEATURE_GRPC         OFF CACHE BOOL "" FORCE)
+    set(USERVER_FEATURE_MONGODB      OFF CACHE BOOL "" FORCE)
+    set(USERVER_FEATURE_CLICKHOUSE   OFF CACHE BOOL "" FORCE)
+    set(USERVER_FEATURE_PATCH_LIBPQ  OFF CACHE BOOL "" FORCE)
+
+    FetchContent_MakeAvailable(userver)
+endif()
 
 find_package(fmt CONFIG REQUIRED)
 find_package(unofficial-argon2 CONFIG REQUIRED)
@@ -70,37 +77,39 @@ target_link_libraries(tracker_core
         fmt::fmt
 )
 
-add_library(tracker_db STATIC
-    libs/db/src/repositories/anamnesis-repository.cpp
-    libs/db/src/repositories/patient-repository.cpp
-    libs/db/src/repositories/user-repository.cpp
-    libs/db/src/repositories/water-repository.cpp
-    libs/db/src/usecases/auth-service.cpp
-)
-target_include_directories(tracker_db
-    PUBLIC
-        ${CMAKE_SOURCE_DIR}/libs/db/include
-)
-target_link_libraries(tracker_db
-    PUBLIC
-        tracker_core
-        tracker_crypto
-        userver::postgresql
-)
+if(BUILD_API)
+    add_library(tracker_db STATIC
+        libs/db/src/repositories/anamnesis-repository.cpp
+        libs/db/src/repositories/patient-repository.cpp
+        libs/db/src/repositories/user-repository.cpp
+        libs/db/src/repositories/water-repository.cpp
+        libs/db/src/usecases/auth-service.cpp
+    )
+    target_include_directories(tracker_db
+        PUBLIC
+            ${CMAKE_SOURCE_DIR}/libs/db/include
+    )
+    target_link_libraries(tracker_db
+        PUBLIC
+            tracker_core
+            tracker_crypto
+            userver::postgresql
+    )
 
-add_library(tracker_session STATIC
-    libs/session/src/redis-session-store.cpp
-    libs/session/src/cookie.cpp
-    libs/session/src/secure-random.cpp
-)
-target_include_directories(tracker_session
-    PUBLIC
-        ${CMAKE_SOURCE_DIR}/libs/session/include
-)
-target_link_libraries(tracker_session
-    PUBLIC
-        userver::redis
-)
+    add_library(tracker_session STATIC
+        libs/session/src/redis-session-store.cpp
+        libs/session/src/cookie.cpp
+        libs/session/src/secure-random.cpp
+    )
+    target_include_directories(tracker_session
+        PUBLIC
+            ${CMAKE_SOURCE_DIR}/libs/session/include
+    )
+    target_link_libraries(tracker_session
+        PUBLIC
+            userver::redis
+    )
+endif()
 
 add_executable(tracker_cli
     apps/cli/src/main.cpp
@@ -126,39 +135,45 @@ target_link_libraries(tracker_cli
         fmt::fmt
 )
 
-add_executable(tracker_api
-    apps/api/src/main.cpp
-    apps/api/src/component-list.cpp
-    apps/api/src/components/session-store-component.cpp
-    apps/api/src/handlers/authenticated-handler.cpp
-    apps/api/src/handlers/auth-handler.cpp
-    apps/api/src/handlers/patient-list-handler.cpp
-    apps/api/src/handlers/patient-by-id-handler.cpp
-    apps/api/src/handlers/anamnesis-list-handler.cpp
-    apps/api/src/handlers/anamnesis-by-id-handler.cpp
-    apps/api/src/handlers/water-list-handler.cpp
-    apps/api/src/handlers/water-by-id-handler.cpp
-)
-target_include_directories(tracker_api
-    PRIVATE
-        ${CMAKE_SOURCE_DIR}/apps/api/include
-)
-target_link_libraries(tracker_api
-    PRIVATE
-        tracker_db
-        tracker_session
-        userver::core
-        userver::postgresql
-        userver::redis
-        nlohmann_json::nlohmann_json
-        fmt::fmt
-)
+if(BUILD_API)
+    add_executable(tracker_api
+        apps/api/src/main.cpp
+        apps/api/src/component-list.cpp
+        apps/api/src/components/session-store-component.cpp
+        apps/api/src/handlers/authenticated-handler.cpp
+        apps/api/src/handlers/auth-handler.cpp
+        apps/api/src/handlers/patient-list-handler.cpp
+        apps/api/src/handlers/patient-by-id-handler.cpp
+        apps/api/src/handlers/anamnesis-list-handler.cpp
+        apps/api/src/handlers/anamnesis-by-id-handler.cpp
+        apps/api/src/handlers/water-list-handler.cpp
+        apps/api/src/handlers/water-by-id-handler.cpp
+    )
+    target_include_directories(tracker_api
+        PRIVATE
+            ${CMAKE_SOURCE_DIR}/apps/api/include
+    )
+    target_link_libraries(tracker_api
+        PRIVATE
+            tracker_db
+            tracker_session
+            userver::core
+            userver::postgresql
+            userver::redis
+            nlohmann_json::nlohmann_json
+            fmt::fmt
+    )
+endif()
 
 set_target_properties(tracker_cli PROPERTIES
     VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
 )
-set_target_properties(tracker_api PROPERTIES
-    VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
-)
 
-set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT tracker_api)
+if(BUILD_API)
+    set_target_properties(tracker_api PROPERTIES
+        VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+    )
+    set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT tracker_api)
+else()
+    set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT tracker_cli)
+endif()

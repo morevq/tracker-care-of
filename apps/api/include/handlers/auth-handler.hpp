@@ -22,6 +22,11 @@ public:
         const userver::server::http::HttpRequest& request,
         userver::server::request::RequestContext& context) const override;
 
+    std::string GetRequestBodyForLogging(
+        const userver::server::http::HttpRequest& request,
+        userver::server::request::RequestContext& context,
+        const std::string& request_body) const override;
+
 private:
     std::string Register(const userver::server::http::HttpRequest& request) const;
     std::string Login(const userver::server::http::HttpRequest& request) const;
