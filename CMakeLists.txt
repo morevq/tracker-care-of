@@ -19,6 +19,7 @@ FetchContent_Declare(
     userver
     GIT_REPOSITORY https://github.com/userver-framework/userver.git
     GIT_TAG        v3.0
+    GIT_SHALLOW    TRUE
 )
 
 set(USERVER_FEATURE_POSTGRESQL   ON  CACHE BOOL "" FORCE)

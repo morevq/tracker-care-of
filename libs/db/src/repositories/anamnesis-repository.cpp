@@ -10,7 +10,7 @@ AnamnesisRepository::AnamnesisRepository(pg::ClusterPtr cluster)
 std::vector<Anamnesis> AnamnesisRepository::getByPatientId(int id_patient) {
     auto result = cluster_->Execute(
         pg::ClusterHostType::kSlave,
-        "SELECT id_anamnesis, description, date, photo_url "
+        "SELECT id_anamnesis, description, date::text, photo_url "
         "FROM anamnesis WHERE id_patient = $1 AND is_deleted = FALSE",
         id_patient
     );
@@ -32,7 +32,7 @@ std::vector<Anamnesis> AnamnesisRepository::getByPatientId(int id_patient) {
 std::optional<Anamnesis> AnamnesisRepository::getByID(int id_anamnesis) {
     auto result = cluster_->Execute(
         pg::ClusterHostType::kSlave,
-        "SELECT id_anamnesis, id_patient, description, photo_url, date "
+        "SELECT id_anamnesis, id_patient, description, photo_url, date::text "
         "FROM anamnesis WHERE id_anamnesis = $1 AND is_deleted = FALSE",
         id_anamnesis
     );
@@ -74,7 +74,7 @@ void AnamnesisRepository::updateAnamnesis(int id_anamnesis,
         pg::ClusterHostType::kMaster,
         "UPDATE anamnesis SET "
         "  description = COALESCE($2, description), "
-        "  date        = COALESCE($3, date), "
+        "  date        = COALESCE($3::timestamptz, date), "
         "  photo_url   = COALESCE($4, photo_url) "
         "WHERE id_anamnesis = $1 AND is_deleted = FALSE",
         id_anamnesis, description, date, photo_url

@@ -20,10 +20,10 @@ public:
         const userver::components::ComponentContext& context,
         tracker_session::SessionStore& session_store);
 
-    static constexpr const char* kCookieName = "__Host-session";
+    static constexpr const char* kCookieName = "session_uuid";
     static constexpr int kSessionTtlSeconds = 86400;
     static constexpr bool kCookieHttpOnly = true;
-    static constexpr bool kCookieSecure = true;
+    static constexpr bool kCookieSecure = false;
     static constexpr const char* kSameSite = "Strict";
 
 protected:

@@ -17,7 +17,7 @@ std::string ApiClient::extractSessionCookie(const cpr::Response& r) {
     std::cerr << "DEBUG: Checking CPR parsed cookies...\n";
     for (const auto& cookie : cookies) {
         std::cerr << "DEBUG: Cookie name: '" << cookie.GetName() << "', value: '" << cookie.GetValue() << "'\n";
-        if (cookie.GetName() == "__Host-session") {
+        if (cookie.GetName() == "session_uuid") {
             std::cerr << "DEBUG: Found session cookie via CPR!\n";
             return cookie.GetName() + "=" + cookie.GetValue();
         }
@@ -26,7 +26,7 @@ std::string ApiClient::extractSessionCookie(const cpr::Response& r) {
     std::cerr << "DEBUG: No session cookie found in CPR cookies list\n";
 
     auto findSessionCookieInHeader = [](const std::string& headerValue) {
-        constexpr const char* kCookieName = "__Host-session=";
+        constexpr const char* kCookieName = "session_uuid=";
         auto pos = headerValue.find(kCookieName);
         if (pos == std::string::npos) {
             return std::string{};
@@ -56,7 +56,7 @@ std::string ApiClient::extractSessionCookie(const cpr::Response& r) {
         auto sessionValue = findSessionCookieInHeader(value);
         if (!sessionValue.empty()) {
             std::cerr << "DEBUG: Found session cookie in Set-Cookie header!\n";
-            return "__Host-session=" + sessionValue;
+            return "session_uuid=" + sessionValue;
         }
     }
 
@@ -80,7 +80,7 @@ std::string ApiClient::extractSessionCookie(const cpr::Response& r) {
                 auto sessionValue = findSessionCookieInHeader(headerValue);
                 if (!sessionValue.empty()) {
                     std::cerr << "DEBUG: Found session cookie in raw headers!\n";
-                    return "__Host-session=" + sessionValue;
+                    return "session_uuid=" + sessionValue;
                 }
             }
 

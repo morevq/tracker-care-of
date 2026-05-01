@@ -11,7 +11,7 @@ std::vector<Water> WaterRepository::getByUserUUID(const std::string& user_uuid) 
     auto result = cluster_->Execute(
         pg::ClusterHostType::kSlave,
         R"(SELECT
-              w.last_water,
+              w.last_water::text AS last_water,
               wf.frequency,
               wf.frequency_measure,
               p.id_patient
@@ -39,7 +39,7 @@ std::vector<Water> WaterRepository::getByUserUUID(const std::string& user_uuid) 
 std::optional<Water> WaterRepository::getByPatientID(int id_patient) {
     auto result = cluster_->Execute(
         pg::ClusterHostType::kSlave,
-        "SELECT w.id_patient, w.last_water, wf.frequency, wf.frequency_measure "
+        "SELECT w.id_patient, w.last_water::text AS last_water, wf.frequency, wf.frequency_measure "
         "FROM water AS w "
         "LEFT JOIN water_frequency AS wf ON w.id_patient = wf.id_patient "
         "WHERE w.id_patient = $1 "
@@ -64,7 +64,7 @@ std::optional<Water> WaterRepository::getByPatientID(int id_patient) {
 bool WaterRepository::addWater(int id_patient, const std::string& last_water) {
     auto check = cluster_->Execute(
         pg::ClusterHostType::kSlave,
-        "SELECT birth_date FROM patient "
+        "SELECT birth_date::text AS birth_date FROM patient "
         "WHERE id_patient = $1 AND is_deleted = FALSE",
         id_patient
     );
@@ -80,7 +80,7 @@ bool WaterRepository::addWater(int id_patient, const std::string& last_water) {
 
     cluster_->Execute(
         pg::ClusterHostType::kMaster,
-        "INSERT INTO water (id_patient, last_water) VALUES ($1, $2)",
+        "INSERT INTO water (id_patient, last_water) VALUES ($1, $2::timestamptz)",
         id_patient, last_water
     );
     return true;

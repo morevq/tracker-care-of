@@ -146,7 +146,7 @@ std::string AuthHandler::Logout(
         SetJsonContentType(request);
 
         return http::Ok(request,
-                        json(AuthResponse{"", "Logged out successfully"}).dump());
+                        json(AuthResponse{"", "Logout successfully"}).dump());
     } catch (const std::exception& e) {
         return http::InternalError(request, e.what());
     }
