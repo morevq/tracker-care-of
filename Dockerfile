@@ -42,7 +42,7 @@ RUN --mount=type=cache,target=/root/.cache/vcpkg \
  && cp build/tracker_api /app/tracker_api
 
 # Stage 2: Runtime
-FROM ubuntu:22.04 AS api
+FROM --platform=linux/amd64 ubuntu:22.04 AS api
 
 WORKDIR /app
 

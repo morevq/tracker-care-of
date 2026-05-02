@@ -60,9 +60,12 @@ services:
     restart: "no"
 
   api-app:
+    platform: linux/amd64
     build:
       context: .
       target: api
+      platforms:
+        - linux/amd64
     container_name: tracker-api
     depends_on:
       db:
