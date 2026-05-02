@@ -26,9 +26,10 @@ public:
 
 private:
     std::string HandleGet(const userver::server::http::HttpRequest& request,
-                          int patient_id, const std::string& user_uuid) const;
+                          int id_water,
+                          const std::string& user_uuid) const;
     std::string HandleDelete(const userver::server::http::HttpRequest& request,
-                             int patient_id,
+                             int id_water,
                              const std::string& user_uuid) const;
 
     mutable WaterRepository water_repo_;

@@ -54,6 +54,29 @@ std::optional<std::string> AuthService::loginUser(const std::string& email,
     return user.user_uuid;
 }
 
+AuthService::ChangePasswordResult AuthService::changePassword(
+    const std::string& user_uuid,
+    const std::string& current_password,
+    const std::string& new_password) {
+    if (new_password.empty() || isBlank(new_password)) {
+        return ChangePasswordResult::kInvalidNewPassword;
+    }
+
+    UserRepository userRepo(cluster_);
+    const auto userOpt = userRepo.getByUUID(user_uuid);
+    if (!userOpt.has_value()) {
+        return ChangePasswordResult::kUserNotFound;
+    }
+
+    if (!PasswordHasher::verifyPassword(current_password, userOpt->password_hash)) {
+        return ChangePasswordResult::kWrongCurrentPassword;
+    }
+
+    const std::string newHash = PasswordHasher::hashPassword(new_password);
+    userRepo.updateUser(user_uuid, std::nullopt, newHash);
+    return ChangePasswordResult::kOk;
+}
+
 userver::storages::postgres::ClusterPtr AuthService::getCluster() const {
     return cluster_;
 }

@@ -6,7 +6,6 @@
 
 #include <userver/storages/postgres/component.hpp>
 
-#include "../dto/anamnesis-dto.h"
 #include "components/session-store-component.hpp"
 #include "handlers/http-helpers.hpp"
 
@@ -14,7 +13,22 @@ namespace tracker_api {
 
 namespace {
 using json = nlohmann::json;
+
+json AnamnesisToJson(const Anamnesis& a) {
+    json j = {
+        {"id", a.id},
+        {"id_patient", a.id_patient},
+        {"description", a.description},
+        {"date", a.created_at},
+    };
+    if (a.photo_url) {
+        j["photo_url"] = *a.photo_url;
+    } else {
+        j["photo_url"] = nullptr;
+    }
+    return j;
 }
+}  // namespace
 
 AnamnesisByIdHandler::AnamnesisByIdHandler(
     const userver::components::ComponentConfig& config,
@@ -63,29 +77,22 @@ std::string AnamnesisByIdHandler::HandleRequestThrow(
 }
 
 std::string AnamnesisByIdHandler::HandleGet(
-    const userver::server::http::HttpRequest& request, int patient_id,
+    const userver::server::http::HttpRequest& request, int anamnesis_id,
     const std::string& user_uuid) const {
     try {
-        auto patient = patient_repo_.getByID(patient_id);
-        if (!patient) {
-            return http::NotFound(request, "Patient not found");
+        auto anamnesis = anamnesis_repo_.getByID(anamnesis_id);
+        if (!anamnesis) {
+            return http::NotFound(request, "Anamnesis not found");
         }
-        if (patient->user_uuid != user_uuid) {
+
+        auto patient = patient_repo_.getByID(anamnesis->id_patient);
+        if (!patient || patient->user_uuid != user_uuid) {
             return http::Forbidden(request);
-        }
-
-        auto records = anamnesis_repo_.getByPatientId(patient_id);
-
-        std::vector<AnamnesisResponse> response;
-        response.reserve(records.size());
-        for (const auto& a : records) {
-            response.push_back(
-                AnamnesisResponse{a.id, a.description, a.photo_url, a.created_at});
         }
 
         request.GetHttpResponse().SetHeader(
             std::string_view{"Content-Type"}, std::string{"application/json"});
-        return http::Ok(request, json(response).dump());
+        return http::Ok(request, AnamnesisToJson(*anamnesis).dump());
     } catch (const std::exception& e) {
         return http::InternalError(request, e.what());
     }
@@ -129,19 +136,9 @@ std::string AnamnesisByIdHandler::HandlePatch(
                                         photo_url);
 
         auto updated = anamnesis_repo_.getByID(anamnesis_id);
-        json response = {
-            {"id", updated->id},
-            {"patient_id", updated->id_patient},
-            {"description", updated->description},
-            {"created_at", updated->created_at},
-        };
-        if (updated->photo_url) {
-            response["photo_url"] = *updated->photo_url;
-        }
-
         request.GetHttpResponse().SetHeader(
             std::string_view{"Content-Type"}, std::string{"application/json"});
-        return http::Ok(request, response.dump());
+        return http::Ok(request, AnamnesisToJson(*updated).dump());
     } catch (const std::exception& e) {
         return http::InternalError(request, e.what());
     }
@@ -149,8 +146,18 @@ std::string AnamnesisByIdHandler::HandlePatch(
 
 std::string AnamnesisByIdHandler::HandleDelete(
     const userver::server::http::HttpRequest& request, int anamnesis_id,
-    const std::string& /*user_uuid*/) const {
+    const std::string& user_uuid) const {
     try {
+        auto anamnesis = anamnesis_repo_.getByID(anamnesis_id);
+        if (!anamnesis) {
+            return http::NoContent(request);
+        }
+
+        auto patient = patient_repo_.getByID(anamnesis->id_patient);
+        if (!patient || patient->user_uuid != user_uuid) {
+            return http::Forbidden(request);
+        }
+
         anamnesis_repo_.deleteAnamnesis(anamnesis_id);
         return http::NoContent(request);
     } catch (const std::exception& e) {

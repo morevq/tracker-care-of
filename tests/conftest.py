@@ -99,6 +99,10 @@ class AuthSession:
         kw.setdefault("timeout", DEFAULT_TIMEOUT)
         return self.session.patch(url, **kw)
 
+    def put(self, url: str, **kw):
+        kw.setdefault("timeout", DEFAULT_TIMEOUT)
+        return self.session.put(url, **kw)
+
     def delete(self, url: str, **kw):
         kw.setdefault("timeout", DEFAULT_TIMEOUT)
         return self.session.delete(url, **kw)

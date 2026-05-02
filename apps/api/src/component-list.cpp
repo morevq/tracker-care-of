@@ -10,12 +10,13 @@
 
 #include "components/session-store-component.hpp"
 #include "handlers/anamnesis-by-id-handler.hpp"
-#include "handlers/anamnesis-list-handler.hpp"
 #include "handlers/auth-handler.hpp"
+#include "handlers/patient-anamnesis-handler.hpp"
 #include "handlers/patient-by-id-handler.hpp"
 #include "handlers/patient-list-handler.hpp"
+#include "handlers/patient-water-handler.hpp"
 #include "handlers/water-by-id-handler.hpp"
-#include "handlers/water-list-handler.hpp"
+#include "handlers/water-frequency-handler.hpp"
 
 userver::components::ComponentList MakeComponentList() {
     auto components = userver::components::MinimalServerComponentList();
@@ -31,10 +32,11 @@ userver::components::ComponentList MakeComponentList() {
         .Append<tracker_api::AuthHandler>()
         .Append<tracker_api::PatientListHandler>()
         .Append<tracker_api::PatientByIdHandler>()
-        .Append<tracker_api::AnamnesisListHandler>()
+        .Append<tracker_api::PatientAnamnesisHandler>()
         .Append<tracker_api::AnamnesisByIdHandler>()
-        .Append<tracker_api::WaterListHandler>()
-        .Append<tracker_api::WaterByIdHandler>();
+        .Append<tracker_api::PatientWaterHandler>()
+        .Append<tracker_api::WaterByIdHandler>()
+        .Append<tracker_api::WaterFrequencyHandler>();
 
     return components;
 }

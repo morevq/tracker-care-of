@@ -20,6 +20,12 @@ constexpr int PATIENT_EXIT = -1;
 int main() {
 setlocale(LC_ALL, "ru_RU.UTF-8");
 
+auto pauseExit = [](int code) {
+    std::cout << "\nPress any key to exit...";
+    _getch();
+    return code;
+};
+
 try {
     auto env = load_env(".env");
     std::string apiUrl = env.count("API_URL") ? env["API_URL"] : "http://localhost:8080";
@@ -27,7 +33,7 @@ try {
     ApiClient apiClient(apiUrl);
 
     if (!AuthHandler::authenticate(apiClient)) {
-        return 1;
+        return pauseExit(1);
     }
 
         auto tablePatients = loadPatientsTable(apiClient);
@@ -102,8 +108,8 @@ try {
     }
     catch (const std::exception& e) {
         std::cerr << "Fatal error: " << e.what() << '\n';
-        return 1;
+        return pauseExit(1);
     }
 
-    return 0;
+    return pauseExit(0);
 }

@@ -69,18 +69,18 @@ components_manager:
 
         session-store: {}
 
-        anamnesis-handler:
-            path: /api/anamnesis
+        patient-anamnesis-handler:
+            path: /api/patients/{patient_id}/anamnesis
             task_processor: main-task-processor
-            method: POST
+            method: GET,POST
 
         anamnesis-by-id-handler:
             path: /api/anamnesis/{id}
             task_processor: main-task-processor
             method: GET,PATCH,DELETE
 
-        water-handler:
-            path: /api/water
+        patient-water-handler:
+            path: /api/patients/{patient_id}/water
             task_processor: main-task-processor
             method: GET,POST
 
@@ -88,3 +88,8 @@ components_manager:
             path: /api/water/{id}
             task_processor: main-task-processor
             method: GET,DELETE
+
+        water-frequency-handler:
+            path: /api/patients/{patient_id}/water-frequency
+            task_processor: main-task-processor
+            method: GET,PUT,DELETE

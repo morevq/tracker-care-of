@@ -8,7 +8,6 @@ done
 
 echo "Database is ready. Applying migrations..."
 
-# �������� ������� ��� ������������ ��������
 PGPASSWORD=$DB_PASSWORD psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" <<-EOSQL
   CREATE TABLE IF NOT EXISTS schema_migrations (
     version VARCHAR(255) PRIMARY KEY,
@@ -16,19 +15,16 @@ PGPASSWORD=$DB_PASSWORD psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_N
   );
 EOSQL
 
-# ���������� �������� �� �������
 for migration in /docker-entrypoint-initdb.d/*.sql; do
   if [ -f "$migration" ]; then
     version=$(basename "$migration" .sql)
-    
-    # �������� ��������� �� ��������
+
     applied=$(PGPASSWORD=$DB_PASSWORD psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -tAc "SELECT COUNT(*) FROM schema_migrations WHERE version='$version'")
-    
+
     if [ "$applied" -eq "0" ]; then
       echo "Applying migration: $version"
-      PGPASSWORD=$DB_PASSWORD psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -f "$migration"
-      
-      # ������� �������� ��� �����������
+      PGPASSWORD=$DB_PASSWORD psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -v ON_ERROR_STOP=1 -f "$migration"
+
       PGPASSWORD=$DB_PASSWORD psql -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" -c "INSERT INTO schema_migrations (version) VALUES ('$version')"
       echo "Migration $version applied successfully"
     else

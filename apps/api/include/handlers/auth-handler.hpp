@@ -22,10 +22,17 @@ public:
         const userver::server::http::HttpRequest& request,
         userver::server::request::RequestContext& context) const override;
 
+    std::string GetRequestBodyForLogging(
+        const userver::server::http::HttpRequest& request,
+        userver::server::request::RequestContext& context,
+        const std::string& request_body) const override;
+
 private:
     std::string Register(const userver::server::http::HttpRequest& request) const;
     std::string Login(const userver::server::http::HttpRequest& request) const;
     std::string Logout(const userver::server::http::HttpRequest& request) const;
+    std::string Me(const userver::server::http::HttpRequest& request) const;
+    std::string ChangePassword(const userver::server::http::HttpRequest& request) const;
     std::string UpdateUser(const userver::server::http::HttpRequest& request) const;
     std::string DeleteUser(const userver::server::http::HttpRequest& request) const;
 

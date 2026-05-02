@@ -20,7 +20,6 @@ struct ApiClient {
         int id;
         std::string name;
         std::optional<std::string> birth_date;
-        std::string created_at;
     };
     std::vector<PatientDto> getPatients();
     bool createPatient(const std::string& name, const std::optional<std::string>& birth_date);
@@ -28,13 +27,18 @@ struct ApiClient {
     bool deletePatient(int id);
 
     struct WaterDto {
-        int id;
+        int id_water;
+        int id_patient;
         std::string lastWater;
-        int frequency;
-        std::string frequencyMeasure;
     };
-    std::vector<WaterDto> getWaterData();
-    bool deleteWater(int id);
+    std::vector<WaterDto> getWaterForPatient(int patientId);
+    bool deleteWater(int id_water);
+
+    struct WaterFrequencyDto {
+        int frequency;
+        std::string measure;
+    };
+    std::optional<WaterFrequencyDto> getWaterFrequency(int patientId);
 
     struct AnamnesisDto {
         int id;

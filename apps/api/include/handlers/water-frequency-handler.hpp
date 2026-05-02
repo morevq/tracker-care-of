@@ -5,18 +5,18 @@
 #include <userver/server/http/http_request.hpp>
 #include <userver/server/request/request_context.hpp>
 
-#include <tracker_db/repositories/anamnesis-repository.h>
 #include <tracker_db/repositories/patient-repository.h>
+#include <tracker_db/repositories/water-repository.h>
 
 #include "handlers/authenticated-handler.hpp"
 
 namespace tracker_api {
 
-class AnamnesisByIdHandler final : public AuthenticatedHandlerBase {
+class WaterFrequencyHandler final : public AuthenticatedHandlerBase {
 public:
-    static constexpr std::string_view kName = "anamnesis-by-id-handler";
+    static constexpr std::string_view kName = "water-frequency-handler";
 
-    AnamnesisByIdHandler(
+    WaterFrequencyHandler(
         const userver::components::ComponentConfig& config,
         const userver::components::ComponentContext& context);
 
@@ -26,16 +26,18 @@ public:
 
 private:
     std::string HandleGet(const userver::server::http::HttpRequest& request,
-                          int anamnesis_id,
-                          const std::string& user_uuid) const;
-    std::string HandlePatch(const userver::server::http::HttpRequest& request,
-                            int anamnesis_id,
-                            const std::string& user_uuid) const;
+                          int patient_id) const;
+    std::string HandlePut(const userver::server::http::HttpRequest& request,
+                          int patient_id) const;
     std::string HandleDelete(const userver::server::http::HttpRequest& request,
-                             int anamnesis_id,
-                             const std::string& user_uuid) const;
+                             int patient_id) const;
 
-    mutable AnamnesisRepository anamnesis_repo_;
+    bool EnsurePatientOwnedBy(const userver::server::http::HttpRequest& request,
+                              int patient_id,
+                              const std::string& user_uuid,
+                              std::string& out_response) const;
+
+    mutable WaterRepository water_repo_;
     mutable PatientRepository patient_repo_;
 };
 
