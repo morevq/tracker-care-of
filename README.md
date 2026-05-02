@@ -123,8 +123,8 @@ cmake --build . --target tracker_api
 
 ```
 tracker-care-of/
-├── apps/                                    # Приложения
-│   ├── api/                                 # API-сервер на userver
+├── apps/                                   # Приложения
+│   ├── api/                                # API-сервер на userver
 │   │   ├── src/
 │   │   │   ├── main.cpp                    # userver::utils::DaemonMain
 │   │   │   ├── component-list.cpp          # Регистрация компонентов
@@ -138,26 +138,26 @@ tracker-care-of/
 │   │   ├── static_config.yaml              # Конфигурация компонентов userver
 │   │   ├── dynamic_config_vars.yaml        # Runtime-переменные
 │   │   └── secdist.json                    # Секреты Redis
-│   └── cli/                                 # Консольное приложение
+│   └── cli/                                # Консольное приложение
 │       ├── include/
 │       └── src/
-├── libs/                                    # Библиотеки
-│   ├── common/                              # Общие утилиты (env-parser)
-│   ├── crypto/                              # Argon2-хэширование паролей
-│   ├── core/                                # Бизнес-модели (Patient, User, Water, Anamnesis)
-│   ├── db/                                  # Работа с PostgreSQL через userver
+├── libs/                                   # Библиотеки
+│   ├── common/                             # Общие утилиты (env-parser)
+│   ├── crypto/                             # Argon2-хэширование паролей
+│   ├── core/                               # Бизнес-модели (Patient, User, Water, Anamnesis)
+│   ├── db/                                 # Работа с PostgreSQL через userver
 │   │   ├── include/tracker_db/
 │   │   │   ├── repositories/               # Репозитории (принимают ClusterPtr)
 │   │   │   └── usecases/                   # AuthService
 │   │   ├── src/
 │   │   └── migrations/                     # SQL-миграции
-│   └── session/                             # Управление сессиями
+│   └── session/                            # Управление сессиями
 │       ├── include/tracker_session/
 │       │   ├── session-store.h             # Интерфейс хранилища
 │       │   └── redis-session-store.h       # Реализация на userver::storages::redis
 │       └── src/
-├── CMakeLists.txt                           # FetchContent userver (под опцией BUILD_API) + vcpkg для CLI
-├── Dockerfile                               # Многоступенчатая сборка userver
+├── CMakeLists.txt                          # FetchContent userver (под опцией BUILD_API) + vcpkg для CLI
+├── Dockerfile                              # Многоступенчатая сборка userver
 ├── docker-compose.yaml
 └── README.md
 ```
